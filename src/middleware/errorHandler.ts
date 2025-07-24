@@ -13,7 +13,7 @@ const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  console.log('Error handler called:', err);
+  console.log("Error handler called:", err);
 
   // Set default values
   const statusCode = err instanceof AppError ? err.statusCode : 500;
@@ -30,7 +30,7 @@ const errorHandler = (
     errorResponse.stack = err.stack;
   }
 
-  console.log('Sending error response:', errorResponse);
+  console.log("Sending error response:", errorResponse);
   res.status(statusCode).json(errorResponse);
 };
 

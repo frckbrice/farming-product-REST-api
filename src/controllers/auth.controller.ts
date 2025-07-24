@@ -151,8 +151,14 @@ export const verifyPhone = async (
     }
 
     const validRoles = ["buyer", "farmer"] as const;
-    if (!userRole || !validRoles.includes(userRole as (typeof validRoles)[number])) {
-      throw new AppError(`Invalid role: ${userRole}. Valid roles are: ${validRoles.join(", ")}`, 400);
+    if (
+      !userRole ||
+      !validRoles.includes(userRole as (typeof validRoles)[number])
+    ) {
+      throw new AppError(
+        `Invalid role: ${userRole}. Valid roles are: ${validRoles.join(", ")}`,
+        400,
+      );
     }
 
     // Check if user already exists
@@ -223,7 +229,12 @@ export const verifyPhone = async (
     });
   } catch (error) {
     if (error instanceof Error) {
-      next(new AppError(error.message, error instanceof AppError ? error.statusCode : 500));
+      next(
+        new AppError(
+          error.message,
+          error instanceof AppError ? error.statusCode : 500,
+        ),
+      );
     } else {
       next(new AppError("An unexpected error occurred", 500));
     }
@@ -404,7 +415,12 @@ export const logIn = async (
     });
   } catch (error) {
     if (error instanceof Error) {
-      next(new AppError(error.message, error instanceof AppError ? error.statusCode : 500));
+      next(
+        new AppError(
+          error.message,
+          error instanceof AppError ? error.statusCode : 500,
+        ),
+      );
     } else {
       next(new AppError("An unexpected error occurred", 500));
     }
