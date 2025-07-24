@@ -252,34 +252,34 @@ export const register_user = async (
   res: Response,
   next: NextFunction,
 ) => {
-  req.file = {
-    path: "https://randomuser.me/api/portraits/men/1.jpg",
-    originalname: "profile.jpg",
-    mimetype: "image/jpeg",
-    size: 12345,
-    fieldname: "image",
-    encoding: "7bit",
-    stream: new Readable(),
-    destination: "",
-    buffer: Buffer.from([]),
-    filename: "profile.jpg",
-  };
-
-  const { userId } = req.params;
-  const { address, expoPushToken } = req.body;
-  const firstName = req.body.firstName.trim();
-  const lastName = req.body.lastName.trim();
-
-  const shippAddress: ShippingAddress[] = [
-    {
-      id: uuidv4(),
-      title: "Home",
-      address,
-      default: true,
-    },
-  ];
-
   try {
+    req.file = {
+      path: "https://randomuser.me/api/portraits/men/1.jpg",
+      originalname: "profile.jpg",
+      mimetype: "image/jpeg",
+      size: 12345,
+      fieldname: "image",
+      encoding: "7bit",
+      stream: new Readable(),
+      destination: "",
+      buffer: Buffer.from([]),
+      filename: "profile.jpg",
+    };
+
+    const { userId } = req.params;
+    const { address, expoPushToken } = req.body;
+    const firstName = req.body.firstName.trim();
+    const lastName = req.body.lastName.trim();
+
+    const shippAddress: ShippingAddress[] = [
+      {
+        id: uuidv4(),
+        title: "Home",
+        address,
+        default: true,
+      },
+    ];
+
     let imageUrl = "";
     if (req.file) {
       const cloudinaryImageUpload = await cloudinary.uploader.upload(
@@ -368,10 +368,11 @@ export const verifyOtp = async (
 export const logIn = async (
   req: Request<unknown, unknown, LoginRequest>,
   res: Response,
+  next: NextFunction,
 ) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+
     const user = await User.findOne({
       where: { email },
       include: [
@@ -383,14 +384,12 @@ export const logIn = async (
     });
 
     if (!user) {
-      return res
-        .status(403)
-        .json({ message: "No user exists for this email address" });
+      throw new AppError("No user exists for this email address", 403);
     }
 
     const verifyPassword = await compare(password, user.password as string);
     if (!verifyPassword) {
-      return res.status(403).json({ message: "Incorrect Password" });
+      throw new AppError("Incorrect Password", 403);
     }
 
     const token = jwt.sign(
@@ -420,13 +419,7 @@ export const logIn = async (
       userData: user,
     });
   } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ error: "error", message: error.message });
-    } else {
-      res
-        .status(500)
-        .json({ error: "error", message: "An unexpected error occurred" });
-    }
+    next(error);
   }
 };
 

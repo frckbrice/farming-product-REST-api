@@ -9,6 +9,7 @@
     "start": "node dist/app.js",
     "dev": "nodemon ./app.ts",
     "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write \"src/**/*.{js,ts,tsx,json,md}\"",
     "lint": "eslint \"src/**/*.{js,ts}\" --max-warnings=0"

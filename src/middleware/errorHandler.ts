@@ -9,7 +9,7 @@ interface ErrorResponse {
 
 const errorHandler = (
   err: Error | AppError,
-  req: Request,
+  _req: Request,
   res: Response,
 ): void => {
   // Set default values

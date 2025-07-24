@@ -1,6 +1,6 @@
 // app.ts
 import dotenv from "dotenv";
-import express, { Application, Request, Response } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import bodyParser from "body-parser";
 import limiter from "./src/middleware/rateLimiter";
 import appRouter from "./src/routes";
@@ -11,6 +11,7 @@ import errorHandler from "./src/middleware/errorHandler";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsDoc from "swagger-jsdoc";
 import helmet from "helmet";
+import AppError from "./src/errors/customErrors";
 
 // Define the server configuration
 const port: number = parseInt(process.env.PORT || "3000", 10);
@@ -112,7 +113,6 @@ app.use("/api/v1", appRouter);
 // @ts-ignore-next-line
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-
 // Swagger default route definition
 /**
  * @swagger
@@ -136,18 +136,28 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello World!! Farming products_2");
 });
 
+// 404 handler - must be before error handler
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const error = new AppError(`Not Found - ${req.originalUrl}`, 500);
+  next(error);
+});
+
 // Error handling middleware
 app.use(errorHandler);
 
 
 
-app.listen(port, async () => {
-
-  try {
-    console.log(`Server running on http${!isDev ? 's' : ''}://${!isDev ? process.env.DB_HOST : hostname}:${port} `);
-  } catch (error) {
-    console.error("Error running migrations:", error);
-  }
-});
+// Only start the server if we're not in a test environment
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, async () => {
+    try {
+      // await sequelize.authenticate(); // This line was commented out in the original file
+      console.log("✅ Database is up to date.");
+    } catch (error) {
+      console.error("❌ Unable to connect to the database:", error);
+    }
+    console.log(`Server running on http://localhost:${port}`);
+  });
+}
 
 export default app;

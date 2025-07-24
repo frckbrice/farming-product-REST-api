@@ -127,25 +127,51 @@ authRouter.put("/signup/:userId", register_user);
 /**
  * @swagger
  * /auth/login:
- *  get:
- *    summary: log in
- *    tags: [Authentication]
- *   requestBody:
- *      required: true
- *      content:
- *        application/json:
- *          schema:
- *            type: object
- *            properties:
- *              email:
- *                type: string
- *              password:
- *                type: string
- *    responses:
- *      200:
- *        description: OK
- *      500:
- *        description: Internal Server Error
+ *   post:
+ *     summary: Log in with email and password
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Authentication Successful"
+ *                 token:
+ *                   type: string
+ *                   description: JWT access token
+ *                 refreshToken:
+ *                   type: string
+ *                   description: JWT refresh token
+ *                 userData:
+ *                   type: object
+ *                   description: User information
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 message:
+ *                   type: string
  */
 authRouter.post("/login", logIn);
 
