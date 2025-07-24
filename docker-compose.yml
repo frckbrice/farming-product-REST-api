@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_HOSTNAME:-farming_products}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_HOSTNAME:-farming_products}
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_HOSTNAME:-farming_products}
+      PROD_DB_USERNAME: ${DB_USER:-postgres}
+      PROD_DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      PROD_DB_NAME: ${DB_HOSTNAME:-farming_products}
+      PROD_DB_HOSTNAME: db
+      PROD_DB_PORT: 5432
+      RUN_MIGRATIONS: 'true'
+      # Add other environment variables here
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET_REFRESH: ${JWT_SECRET_REFRESH}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE: ${TWILIO_PHONE}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+    ports:
+      - "3000:3000"
+    restart: always
+    command: sh -c "yarn install && yarn build && npx sequelize-cli db:migrate && node dist/app.js"
+
+volumes:
+  db_data: 
