@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "@types/express": [
+        "./node_modules/@types/express"
+      ],
+      "@types/multer": [
+        "./node_modules/@types/multer"
+      ]
+    },
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+    "types": [
+      "express",
+      "multer"
+    ],
+    "moduleResolution": "node",
+    "allowJs": true,
+    "noEmit": true,
+    "skipDefaultLibCheck": true,
+    "ignoreDeprecations": "5.0",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "app.ts",
+    "src/**/*",
+    "src/swagger.ts",
+    "tests/**/*"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
