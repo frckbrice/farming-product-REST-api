@@ -1,9 +1,21 @@
-node_modules
+# Environment variables
 .env
-
-coverage/
-.vitest/
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+env.local
+docker-compose.yml
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Local files
+*.local 
