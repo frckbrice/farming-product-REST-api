@@ -32,10 +32,11 @@ describe('API Tests', () => {
         expect(app).toBeDefined();
     });
 
-    it('should return 500 for unknown routes', async () => {
-        const response = await request(app).get('/api/v1/non-existent-route');
-        expect(response.status).toBe(500);
-        expect(response.body).toHaveProperty('status', 'error');
-        expect(response.body).toHaveProperty('message', 'Not Found - /api/v1/non-existent-route');
+    it('should return 404 for unknown routes', async () => {
+        const response = await request(app).get('/non-existent-route');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('status', 'fail');
+        expect(response.body).toHaveProperty('message');
+        expect(response.body.message).toContain('Not Found - /non-existent-route');
     });
 }); 

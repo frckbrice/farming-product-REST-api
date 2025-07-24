@@ -136,22 +136,18 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello World!! Farming products_2");
 });
 
-// 404 handler - must be before error handler
+// 404 handler
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const error = new AppError(`Not Found - ${req.originalUrl}`, 500);
-  next(error);
+  next(new AppError(`Not Found - ${req.originalUrl}`, 404));
 });
 
-// Error handling middleware
+// Error handling middleware - must be last
 app.use(errorHandler);
-
-
 
 // Only start the server if we're not in a test environment
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, async () => {
     try {
-      // await sequelize.authenticate(); // This line was commented out in the original file
       console.log("✅ Database is up to date.");
     } catch (error) {
       console.error("❌ Unable to connect to the database:", error);

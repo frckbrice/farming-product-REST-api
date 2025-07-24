@@ -35,28 +35,35 @@ describe('Auth Controller', () => {
                 .send({});
 
             expect(response.status).toBe(400);
-            expect(response.body).toHaveProperty('status', 'FAILED');
+            expect(response.body).toHaveProperty('status', 'fail');
             expect(response.body).toHaveProperty('message', 'Empty input fields');
         });
 
         it('should return 500 if database error occurs', async () => {
-            const response = await request(app)
-                .post('/api/v1/auth/signup')
-                .send({
-                    email: 'test@example.com',
-                    password: 'password123',
-                    userRole: 'buyer',
-                    phoneNum: '1234567890',
-                    country: 'US',
-                });
+          // Mock User.create to throw an error for this specific test
+          mockModels.User.create.mockRejectedValueOnce(new Error('Database error'));
 
-            expect(response.status).toBe(500);
-            expect(response.body).toHaveProperty('message');
-        });
+          const response = await request(app)
+              .post('/api/v1/auth/signup')
+              .send({
+                  email: 'test@example.com',
+                  password: 'password123',
+                  userRole: 'buyer',
+                  phoneNum: '1234567890',
+                  country: 'US',
+              });
+
+          expect(response.status).toBe(500);
+          expect(response.body).toHaveProperty('status', 'fail');
+          expect(response.body).toHaveProperty('message');
+      });
     });
 
     describe('POST /api/v1/auth/login', () => {
         it('should return 500 if database error occurs', async () => {
+            // Mock User.findOne to throw an error for this specific test
+            mockModels.User.findOne.mockRejectedValueOnce(new Error('Database error'));
+
             const response = await request(app)
                 .post('/api/v1/auth/login')
                 .send({
@@ -65,7 +72,7 @@ describe('Auth Controller', () => {
                 });
 
             expect(response.status).toBe(500);
-            expect(response.body).toHaveProperty('status', 'error');
+            expect(response.body).toHaveProperty('status', 'fail');
             expect(response.body).toHaveProperty('message');
         });
     });

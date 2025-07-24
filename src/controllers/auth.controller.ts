@@ -132,47 +132,33 @@ const sendOTP = async (email: string, otp: string, phone: string) => {
 export const verifyPhone = async (
   req: Request<unknown, unknown, VerifyPhoneRequest>,
   res: Response,
+  next: NextFunction,
 ) => {
-  const { phoneNum, password, country, email, userRole } = req.body;
-
-  // Input validation
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ status: "FAILED", message: "Empty input fields" });
-  }
-
-  if (password.length < 8) {
-    return res.status(400).json({
-      status: "FAILED",
-      message: "Password must be at least 8 characters",
-    });
-  }
-
-  if (!/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-    return res
-      .status(400)
-      .json({ status: "FAILED", message: "Invalid email entered" });
-  }
-
-  const validRoles = ["buyer", "farmer"] as const;
-  if (
-    !userRole ||
-    !validRoles.includes(userRole as (typeof validRoles)[number])
-  ) {
-    return res.status(400).json({
-      status: "FAILED",
-      message: `Invalid role: ${userRole}. Valid roles are: ${validRoles.join(", ")}`,
-    });
-  }
-
   try {
+    const { phoneNum, password, country, email, userRole } = req.body;
+
+    // Input validation
+    if (!email || !password) {
+      throw new AppError("Empty input fields", 400);
+    }
+
+    if (password.length < 8) {
+      throw new AppError("Password must be at least 8 characters", 400);
+    }
+
+    if (!/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+      throw new AppError("Invalid email entered", 400);
+    }
+
+    const validRoles = ["buyer", "farmer"] as const;
+    if (!userRole || !validRoles.includes(userRole as (typeof validRoles)[number])) {
+      throw new AppError(`Invalid role: ${userRole}. Valid roles are: ${validRoles.join(", ")}`, 400);
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
-      return res
-        .status(400)
-        .json({ message: "This email is already registered." });
+      throw new AppError("This email is already registered.", 400);
     }
 
     // Find or create role
@@ -236,13 +222,11 @@ export const verifyPhone = async (
       userID: user.id,
     });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     if (error instanceof Error) {
-      return res.status(500).json({ message: error.message });
+      next(new AppError(error.message, error instanceof AppError ? error.statusCode : 500));
+    } else {
+      next(new AppError("An unexpected error occurred", 500));
     }
-    return res.status(500).json({ message: "An unexpected error occurred" });
   }
 };
 
@@ -419,7 +403,11 @@ export const logIn = async (
       userData: user,
     });
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(new AppError(error.message, error instanceof AppError ? error.statusCode : 500));
+    } else {
+      next(new AppError("An unexpected error occurred", 500));
+    }
   }
 };
 
