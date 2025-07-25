@@ -132,47 +132,39 @@ const sendOTP = async (email: string, otp: string, phone: string) => {
 export const verifyPhone = async (
   req: Request<unknown, unknown, VerifyPhoneRequest>,
   res: Response,
+  next: NextFunction,
 ) => {
-  const { phoneNum, password, country, email, userRole } = req.body;
-
-  // Input validation
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ status: "FAILED", message: "Empty input fields" });
-  }
-
-  if (password.length < 8) {
-    return res.status(400).json({
-      status: "FAILED",
-      message: "Password must be at least 8 characters",
-    });
-  }
-
-  if (!/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-    return res
-      .status(400)
-      .json({ status: "FAILED", message: "Invalid email entered" });
-  }
-
-  const validRoles = ["buyer", "farmer"] as const;
-  if (
-    !userRole ||
-    !validRoles.includes(userRole as (typeof validRoles)[number])
-  ) {
-    return res.status(400).json({
-      status: "FAILED",
-      message: `Invalid role: ${userRole}. Valid roles are: ${validRoles.join(", ")}`,
-    });
-  }
-
   try {
+    const { phoneNum, password, country, email, userRole } = req.body;
+
+    // Input validation
+    if (!email || !password) {
+      throw new AppError("Empty input fields", 400);
+    }
+
+    if (password.length < 8) {
+      throw new AppError("Password must be at least 8 characters", 400);
+    }
+
+    if (!/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+      throw new AppError("Invalid email entered", 400);
+    }
+
+    const validRoles = ["buyer", "farmer"] as const;
+    if (
+      !userRole ||
+      !validRoles.includes(userRole as (typeof validRoles)[number])
+    ) {
+      throw new AppError(
+        `Invalid role: ${userRole}. Valid roles are: ${validRoles.join(", ")}`,
+        400,
+      );
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
-      return res
-        .status(400)
-        .json({ message: "This email is already registered." });
+      throw new AppError("This email is already registered.", 400);
     }
 
     // Find or create role
@@ -236,13 +228,16 @@ export const verifyPhone = async (
       userID: user.id,
     });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     if (error instanceof Error) {
-      return res.status(500).json({ message: error.message });
+      next(
+        new AppError(
+          error.message,
+          error instanceof AppError ? error.statusCode : 500,
+        ),
+      );
+    } else {
+      next(new AppError("An unexpected error occurred", 500));
     }
-    return res.status(500).json({ message: "An unexpected error occurred" });
   }
 };
 
@@ -252,34 +247,34 @@ export const register_user = async (
   res: Response,
   next: NextFunction,
 ) => {
-  req.file = {
-    path: "https://randomuser.me/api/portraits/men/1.jpg",
-    originalname: "profile.jpg",
-    mimetype: "image/jpeg",
-    size: 12345,
-    fieldname: "image",
-    encoding: "7bit",
-    stream: new Readable(),
-    destination: "",
-    buffer: Buffer.from([]),
-    filename: "profile.jpg",
-  };
-
-  const { userId } = req.params;
-  const { address, expoPushToken } = req.body;
-  const firstName = req.body.firstName.trim();
-  const lastName = req.body.lastName.trim();
-
-  const shippAddress: ShippingAddress[] = [
-    {
-      id: uuidv4(),
-      title: "Home",
-      address,
-      default: true,
-    },
-  ];
-
   try {
+    req.file = {
+      path: "https://randomuser.me/api/portraits/men/1.jpg",
+      originalname: "profile.jpg",
+      mimetype: "image/jpeg",
+      size: 12345,
+      fieldname: "image",
+      encoding: "7bit",
+      stream: new Readable(),
+      destination: "",
+      buffer: Buffer.from([]),
+      filename: "profile.jpg",
+    };
+
+    const { userId } = req.params;
+    const { address, expoPushToken } = req.body;
+    const firstName = req.body.firstName.trim();
+    const lastName = req.body.lastName.trim();
+
+    const shippAddress: ShippingAddress[] = [
+      {
+        id: uuidv4(),
+        title: "Home",
+        address,
+        default: true,
+      },
+    ];
+
     let imageUrl = "";
     if (req.file) {
       const cloudinaryImageUpload = await cloudinary.uploader.upload(
@@ -368,10 +363,11 @@ export const verifyOtp = async (
 export const logIn = async (
   req: Request<unknown, unknown, LoginRequest>,
   res: Response,
+  next: NextFunction,
 ) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+
     const user = await User.findOne({
       where: { email },
       include: [
@@ -383,14 +379,12 @@ export const logIn = async (
     });
 
     if (!user) {
-      return res
-        .status(403)
-        .json({ message: "No user exists for this email address" });
+      throw new AppError("No user exists for this email address", 403);
     }
 
     const verifyPassword = await compare(password, user.password as string);
     if (!verifyPassword) {
-      return res.status(403).json({ message: "Incorrect Password" });
+      throw new AppError("Incorrect Password", 403);
     }
 
     const token = jwt.sign(
@@ -421,11 +415,14 @@ export const logIn = async (
     });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({ error: "error", message: error.message });
+      next(
+        new AppError(
+          error.message,
+          error instanceof AppError ? error.statusCode : 500,
+        ),
+      );
     } else {
-      res
-        .status(500)
-        .json({ error: "error", message: "An unexpected error occurred" });
+      next(new AppError("An unexpected error occurred", 500));
     }
   }
 };
