@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import AppError from "../errors/customErrors";
 
 // Define custom types for multer request and response
-type MulterRequest = Request & { file?: Express.Multer.File };
+type MulterRequest = Request & { file?: any };
 type MulterResponse = Response;
 
 // Define the storage configuration
