@@ -164,7 +164,7 @@ export const verifyPhone = async (
     // Check if user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
-      throw new AppError("This email is already registered.", 400);
+      throw new AppError("This email is already registered.", 409);
     }
 
     // Find or create role

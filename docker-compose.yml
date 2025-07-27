@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_HOSTNAME:-farming_products}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
 
@@ -16,7 +16,7 @@ services:
     depends_on:
       - db
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}
@@ -39,10 +39,15 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_PHONE: ${TWILIO_PHONE}
       BREVO_API_KEY: ${BREVO_API_KEY}
+      # Adwa Payment Configuration
+      ADWA_MERCHANT_KEY: ${ADWA_MERCHANT_KEY}
+      ADWA_APPLICATION_KEY: ${ADWA_APPLICATION_KEY}
+      ADWA_SUBSCRIPTION_KEY: ${ADWA_SUBSCRIPTION_KEY}
+      ADWA_BASE_URL: ${ADWA_BASE_URL}
     ports:
       - "3000:3000"
     restart: always
-    command: sh -c "yarn install && yarn build && npx sequelize-cli db:migrate && node dist/app.js"
+    command: node dist/app.js
 
 volumes:
   db_data: 

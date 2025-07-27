@@ -17,14 +17,24 @@ export const MockSequelize = vi.fn(() => mockSequelizeInstance);
 export const mockModels = {
     User: {
         findOne: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'test-id' })),
+        create: vi.fn().mockImplementation((data) => Promise.resolve({
+            id: 'test-id',
+            email: data.email,
+            password: data.password,
+            role: {
+                roleName: 'buyer',
+            },
+            firstName: 'Test',
+            lastName: 'User',
+            verifiedUser: true,
+        })),
         findAll: vi.fn().mockResolvedValue([]),
         update: vi.fn().mockResolvedValue([1]),
         destroy: vi.fn().mockResolvedValue(1),
     },
     Role: {
-        findOne: vi.fn().mockResolvedValue({ id: 'role-id' }),
-        create: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'role-id' })),
+        findOne: vi.fn().mockResolvedValue({ id: 'role-id', roleName: 'buyer' }),
+        create: vi.fn().mockImplementation((data) => Promise.resolve({ id: 'role-id', roleName: data.roleName })),
         findAll: vi.fn().mockResolvedValue([]),
     },
     Product: {
@@ -57,8 +67,9 @@ export const mockModels = {
     UserOTPCode: {
         findOne: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockImplementation((data) => Promise.resolve({
-            ...data,
             id: 'otp-id',
+            otp: data.otp,
+            userId: data.userId,
             expiredAt: new Date(Date.now() + 10 * 60 * 1000),
         })),
         destroy: vi.fn().mockResolvedValue(1),
@@ -80,17 +91,6 @@ vi.mock('../../src/models/userotpcode', () => ({
     __esModule: true,
     default: mockModels.UserOTPCode,
 }));
-
-// Mock nodemailer
-const mockTransporter = {
-    sendMail: vi.fn().mockResolvedValue(true),
-};
-
-vi.mock('nodemailer', () => {
-    return {
-        createTransport: () => mockTransporter,
-    };
-});
 
 // Mock cloudinary
 vi.mock('cloudinary', () => ({

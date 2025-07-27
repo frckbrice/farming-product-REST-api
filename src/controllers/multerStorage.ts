@@ -10,7 +10,7 @@ type MulterResponse = Response;
 // Define the storage configuration
 const storage: StorageEngine = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, "./src/public/images");
+    cb(null, "./public/assets/images");
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);

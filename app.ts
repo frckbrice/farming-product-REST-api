@@ -91,7 +91,7 @@ const doc: any = {
 const swaggerSpec = swaggerJsDoc(doc);
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerJsDoc(doc)));
 
-const imagesDir = path.join(__dirname, "/src/public/images");
+const imagesDir = path.join(__dirname, "../public/assets/images");
 
 // Ensure the directory exists at app start
 if (!fs.existsSync(imagesDir)) {
@@ -105,7 +105,9 @@ app.use(helmet());
 
 app.use(bodyParser.json());
 app.use(cors());
-app.use("/public/images", express.static("public/images"));
+app.use("/public", express.static("public"));
+app.use("/public/assets", express.static("public/assets"));
+app.use("/public/assets/images", express.static("public/assets/images"));
 
 // Routes setup
 app.use("/api/v1", appRouter);
@@ -130,15 +132,24 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Hello World!! Farming products_2"
+ *                   example: "Hello World!! Farming products"
  */
 app.get("/", (req: Request, res: Response) => {
-  res.send("Hello World!! Farming products_2");
+  res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// 404 handler
+// 404 handler - serve custom 404 page for HTML requests, JSON for API requests
 app.use((req: Request, res: Response, next: NextFunction) => {
-  next(new AppError(`Not Found - ${req.originalUrl}`, 404));
+  // Check if the request is for an API endpoint or expects JSON
+  const isAPIRequest = req.path.startsWith('/api/v1') || req.get('Accept')?.includes('application/json');
+
+  if (isAPIRequest) {
+  // For API requests, return JSON error
+    next(new AppError(`Not Found - ${req.originalUrl}`, 404));
+  } else {
+    // For web requests, serve the custom 404 page
+    res.status(404).sendFile(path.join(__dirname, "../public/404.html"));
+  }
 });
 
 // Error handling middleware - must be last
