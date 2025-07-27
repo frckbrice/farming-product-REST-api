@@ -57,12 +57,12 @@ if (models.length === 0) {
 
 const sequelize = new Sequelize(`${connectionString}`, {
   dialect: "postgres",
-  dialectOptions: {
+  dialectOptions: environment === "production" ? {
     ssl: {
       require: true,
       rejectUnauthorized: false, // Use this we use a service that uses a self-signed certificate
     },
-  },
+  } : {},
   logging: console.log, // Set to false to disable SQL query logging
   models: models,
 });

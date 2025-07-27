@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | Farming Products API</title>
+    <link rel="stylesheet" href="/public/assets/styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .error-content {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            animation: fadeInDown 1s ease-out 0.3s both;
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease-out 0.5s both;
+        }
+
+        .error-message {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 0.7s both;
+        }
+
+        .error-description {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 40px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 1s ease-out 0.9s both;
+        }
+
+        .actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 1.1s both;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            animation: fadeInUp 1s ease-out 1.3s both;
+        }
+
+        .search-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .search-box {
+            display: flex;
+            max-width: 400px;
+            margin: 0 auto;
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .search-btn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .helpful-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+            animation: fadeInUp 1s ease-out 1.5s both;
+        }
+
+        .helpful-link {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-decoration: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .helpful-link:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .helpful-link h4 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .helpful-link p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .floating-element:nth-child(3) {
+            width: 40px;
+            height: 40px;
+            top: 80%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        .error-path {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #666;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+
+            .error-title {
+                font-size: 2rem;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .helpful-links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="floating-elements">
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+    </div>
+
+    <div class="container">
+        <div class="error-content">
+            <div class="error-code">404</div>
+            <h1 class="error-title">Oops! Page Not Found</h1>
+            <p class="error-message">The page you're looking for doesn't exist or has been moved.</p>
+            <p class="error-description">
+                Don't worry! You can navigate back to our main page or explore our API documentation to find what you're
+                looking for.
+            </p>
+
+            <div class="error-path" id="errorPath">
+                <!-- This will be populated by JavaScript -->
+            </div>
+
+            <div class="actions">
+                <a href="/" class="btn btn-primary">🏠 Go Home</a>
+                <a href="/api-docs" class="btn btn-secondary">📚 API Docs</a>
+                <button onclick="history.back()" class="btn btn-secondary">⬅️ Go Back</button>
+            </div>
+
+            <div class="search-section">
+                <h3>🔍 Looking for something specific?</h3>
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Search our API endpoints..." id="searchInput">
+                    <button class="search-btn" onclick="searchAPI()">Search</button>
+                </div>
+            </div>
+
+            <div class="helpful-links">
+                <a href="/api/v1/health" class="helpful-link">
+                    <h4>🔗 Health Check</h4>
+                    <p>Check if our API is running properly</p>
+                </a>
+                <a href="/api/v1/products" class="helpful-link">
+                    <h4>🌾 Products</h4>
+                    <p>Browse available farming products</p>
+                </a>
+                <a href="/api/v1/auth" class="helpful-link">
+                    <h4>🔐 Authentication</h4>
+                    <p>Learn about our authentication system</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Display the current path that caused the 404
+        document.addEventListener('DOMContentLoaded', function () {
+            const errorPath = document.getElementById('errorPath');
+            const currentPath = window.location.pathname;
+            errorPath.textContent = `Requested path: ${currentPath}`;
+        });
+
+        // Search functionality
+        function searchAPI() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (searchTerm) {
+                // Redirect to main page with search parameter
+                window.location.href = `/?search=${encodeURIComponent(searchTerm)}`;
+            }
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                searchAPI();
+            }
+        });
+
+        // Add some interactive effects
+        document.querySelectorAll('.helpful-link').forEach(link => {
+            link.addEventListener('mouseenter', function () {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            });
+
+            link.addEventListener('mouseleave', function () {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Add typing effect to the error message
+        const errorMessage = document.querySelector('.error-message');
+        const originalText = errorMessage.textContent;
+        errorMessage.textContent = '';
+
+        let i = 0;
+        function typeWriter() {
+            if (i < originalText.length) {
+                errorMessage.textContent += originalText.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50);
+            }
+        }
+
+        // Start typing effect after a delay
+        setTimeout(typeWriter, 1500);
+
+        // Add a fun easter egg - click the 404 number
+        document.querySelector('.error-code').addEventListener('click', function () {
+            this.style.transform = 'rotate(360deg) scale(1.1)';
+            this.style.transition = 'transform 0.5s ease';
+
+            setTimeout(() => {
+                this.style.transform = 'rotate(0deg) scale(1)';
+            }, 500);
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function (e) {
+            switch (e.key) {
+                case 'Escape':
+                    history.back();
+                    break;
+                case 'Home':
+                    window.location.href = '/';
+                    break;
+                case 'h':
+                case 'H':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        window.location.href = '/';
+                    }
+                    break;
+            }
+        });
+    </script>
+    <script src="/public/assets/script.js"></script>
+</body>
+
+</html>

@@ -164,7 +164,7 @@ export const verifyPhone = async (
     // Check if user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
-      throw new AppError("This email is already registered.", 400);
+      throw new AppError("This email is already registered.", 409);
     }
 
     // Find or create role
@@ -200,31 +200,22 @@ export const verifyPhone = async (
       throw new AppError("Failed to create user during registration", 500);
     }
 
-    // Generate and store OTP
+    // Generate and save OTP
     const otp = generateOTP();
-    const hashedOtp = hashSync(otp, 10);
-
-    // Create OTP object
-    const otpObj = await UserOTPCode.create({
+    await UserOTPCode.create({
       userId: user.id,
-      otp: hashedOtp,
-      expiredAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
+      otp: hashSync(otp, 10),
+      expiredAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    if (!otpObj) {
-      throw new AppError("Failed to create OTP in the database", 500);
-    }
-
-    // Send OTP via email and/or SMS
+    // Send OTP
     await sendOTP(email, otp, phoneNum);
 
-    // Return success response
-    return res.status(200).json({
+    res.status(200).json({
       message: "OTP sent successfully, please verify the OTP",
       email: user.email,
-      phoneNum: user.phoneNum,
       userID: user.id,
     });
   } catch (error) {
@@ -306,56 +297,52 @@ export const register_user = async (
 export const verifyOtp = async (
   req: Request<unknown, unknown, VerifyOtpRequest>,
   res: Response,
+  next: NextFunction,
 ) => {
-  const { email, otp } = req.body;
-
   try {
+    const { email, otp } = req.body;
+
     const currentUser = await User.findOne({ where: { email } });
     if (!currentUser) {
-      return res
-        .status(401)
-        .json({ message: "The User does not exist. Please sign up!" });
+      throw new AppError("The User does not exist. Please sign up!", 401);
     }
 
     const getOtp = await UserOTPCode.findOne({
       where: { userId: currentUser.id },
     });
     if (!getOtp) {
-      return res.status(404).json({
-        message: "Server Error! Please Try Again Later by signing up.",
-      });
+      throw new AppError("Server Error! Please Try Again Later by signing up.", 404);
     }
 
     const { expiredAt } = getOtp;
     if (expiredAt < Date.now()) {
       await UserOTPCode.destroy({ where: { userId: currentUser.id } });
-      return res
-        .status(404)
-        .json({ message: "Code has expired. Please request again" });
+      throw new AppError("Code has expired. Please request again", 404);
     }
 
     const validOtp = await compare(otp, getOtp.otp);
-    if (validOtp) {
-      await UserOTPCode.destroy({ where: { userId: currentUser.id } });
-      await User.update({ verifiedUser: true }, { where: { email } });
-
-      currentUser.password = null;
-      return res
-        .status(200)
-        .json({ message: "Successfully verified!", userId: currentUser.id });
-    } else {
-      return res.status(403).json({ message: "Wrong OTP" });
+    if (!validOtp) {
+      throw new AppError("Wrong OTP", 403);
     }
+
+    await UserOTPCode.destroy({ where: { userId: currentUser.id } });
+    await User.update({ verifiedUser: true }, { where: { email } });
+
+    currentUser.password = null;
+    return res
+      .status(200)
+      .json({ message: "Successfully verified!", userId: currentUser.id });
   } catch (error) {
     if (error instanceof Error) {
-      return res.status(500).json({
-        message: "Internal Server Error!",
-        error: error.message,
-      });
+      next(
+        new AppError(
+          error.message,
+          error instanceof AppError ? error.statusCode : 500,
+        ),
+      );
+    } else {
+      next(new AppError("An unexpected error occurred", 500));
     }
-    return res.status(500).json({
-      message: "Internal Server Error!",
-    });
   }
 };
 
@@ -405,13 +392,20 @@ export const logIn = async (
       { expiresIn: "7d" },
     );
 
-    user.password = null;
+    const userData = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      verifiedUser: user.verifiedUser,
+      role: user.role?.roleName,
+    };
 
     res.status(200).json({
       message: "Authentication Successful",
       token,
       refreshToken,
-      userData: user,
+      userData,
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -634,18 +628,18 @@ export const sendNewOTP = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ message: "Email is required" });
-  }
-
   try {
+    const { email } = req.body;
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(400).json({
-        message:
-          "This email is not registered. Please enter the email with which you have registered your account!",
-      });
+      throw new AppError(
+        "This email is not registered. Please enter the email with which you have registered your account!",
+        400,
+      );
     }
 
     const code = generateOTP();
@@ -674,9 +668,15 @@ export const sendNewOTP = async (
       email: user.email,
     });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ message: error.message });
+    if (error instanceof Error) {
+      next(
+        new AppError(
+          error.message,
+          error instanceof AppError ? error.statusCode : 500,
+        ),
+      );
+    } else {
+      next(new AppError("An unexpected error occurred", 500));
     }
-    next(error);
   }
 };

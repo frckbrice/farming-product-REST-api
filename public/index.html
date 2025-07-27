@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farming Products API - Welcome</title>
+    <link rel="stylesheet" href="/public/assets/styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 0;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 1s ease-out 0.6s both;
+        }
+
+        .api-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .info-card p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .endpoints {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .endpoints h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .endpoint-group {
+            margin-bottom: 25px;
+        }
+
+        .endpoint-group h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .endpoint {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+
+        .get {
+            background: #28a745;
+            color: white;
+        }
+
+        .post {
+            background: #007bff;
+            color: white;
+        }
+
+        .put {
+            background: #ffc107;
+            color: black;
+        }
+
+        .delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: scale(1.05);
+        }
+
+        .feature h4 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            color: white;
+            opacity: 0.8;
+        }
+
+        .status {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin: 20px 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .tech-stack {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .tech-stack h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .main-content {
+                padding: 20px;
+                margin: 20px 0;
+            }
+
+            .api-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🌾 Farming Products API</h1>
+            <p>Connecting farmers and buyers through innovative technology</p>
+            <div class="status">🟢 API Status: Online</div>
+        </header>
+
+        <main class="main-content">
+            <div class="api-info">
+                <div class="info-card">
+                    <h3>🚀 RESTful API</h3>
+                    <p>Modern REST API built with Node.js, Express, and TypeScript for seamless integration</p>
+                </div>
+                <div class="info-card">
+                    <h3>🔐 Secure Authentication</h3>
+                    <p>JWT-based authentication with OAuth support for Google and Facebook login</p>
+                </div>
+                <div class="info-card">
+                    <h3>📱 Mobile Ready</h3>
+                    <p>Optimized for mobile applications with push notifications and real-time updates</p>
+                </div>
+            </div>
+
+            <div class="tech-stack">
+                <h2>🛠️ Technology Stack</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">Node.js</div>
+                    <div class="tech-item">Express.js</div>
+                    <div class="tech-item">TypeScript</div>
+                    <div class="tech-item">PostgreSQL</div>
+                    <div class="tech-item">Sequelize ORM</div>
+                    <div class="tech-item">JWT Authentication</div>
+                    <div class="tech-item">Nodemailer</div>
+                    <div class="tech-item">Cloudinary</div>
+                </div>
+            </div>
+
+            <div class="endpoints">
+                <h2>🔗 API Endpoints</h2>
+
+                <div class="endpoint-group">
+                    <h3>Authentication</h3>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/auth/signup</code> - User registration with OTP verification
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/auth/login</code> - User login with JWT tokens
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/auth/verifyOTP</code> - OTP verification for account activation
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/auth/refreshToken</code> - Refresh JWT access token
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <h3>Products</h3>
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <code>/api/v1/products</code> - Get all products with pagination
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/products</code> - Create new product (Farmers only)
+                    </div>
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <code>/api/v1/products/:id</code> - Get product by ID
+                    </div>
+                    <div class="endpoint">
+                        <span class="method put">PUT</span>
+                        <code>/api/v1/products/:id</code> - Update product (Owner only)
+                    </div>
+                    <div class="endpoint">
+                        <span class="method delete">DELETE</span>
+                        <code>/api/v1/products/:id</code> - Delete product (Owner only)
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <h3>Orders & Transactions</h3>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/orders</code> - Create new order
+                    </div>
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <code>/api/v1/orders</code> - Get user orders
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/payments</code> - Process payment
+                    </div>
+                </div>
+
+                <div class="endpoint-group">
+                    <h3>User Management</h3>
+                    <div class="endpoint">
+                        <span class="method get">GET</span>
+                        <code>/api/v1/users/profile</code> - Get user profile
+                    </div>
+                    <div class="endpoint">
+                        <span class="method put">PUT</span>
+                        <code>/api/v1/users/profile</code> - Update user profile
+                    </div>
+                    <div class="endpoint">
+                        <span class="method post">POST</span>
+                        <code>/api/v1/users/upload-avatar</code> - Upload profile picture
+                    </div>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <h4>🔒 Secure</h4>
+                    <p>JWT authentication, input validation, and rate limiting</p>
+                </div>
+                <div class="feature">
+                    <h4>📊 Scalable</h4>
+                    <p>Built with scalability in mind using modern architecture patterns</p>
+                </div>
+                <div class="feature">
+                    <h4>📱 Mobile-First</h4>
+                    <p>Optimized for mobile applications with responsive design</p>
+                </div>
+                <div class="feature">
+                    <h4>🌐 Real-time</h4>
+                    <p>Push notifications and real-time updates for better user experience</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 40px 0;">
+                <h2>🚀 Getting Started</h2>
+                <p style="font-size: 1.1rem; margin: 20px 0;">
+                    Start building your farming marketplace application today!
+                </p>
+                <!-- <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4>Base URL:</h4>
+                    <code style="background: #e9ecef; padding: 8px 12px; border-radius: 5px; font-size: 1rem;">
+                        https://your-domain.com/api/v1
+                    </code>
+                </div> -->
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2025 Farming Products API. Built with ❤️ for the agricultural community.</p>
+
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                Version 1.0.0 | Documentation | Support
+            </p>
+
+            <p style="margin-top: 15px; font-size: 0.9rem;">
+                Developed by <a href="https://maebrieporfolio.vercel.app" target="_blank" rel="noopener noreferrer"
+                    style="color: #ff7bf0; text-decoration: none; font-weight: 500;">Avom Brice</a>
+            </p>
+        </footer>
+    </div>
+    <script src="/public/assets/script.js"></script>
+</body>
+
+</html>
