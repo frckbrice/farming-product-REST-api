@@ -51,7 +51,7 @@ jobs:
 
       - name: Extract repo name
         id: repo
-        run: echo "REPO_NAME=$(echo ${{ github.repository }} | awk -F'/' '{print $2}')" >> $GITHUB_ENV
+        run: echo "REPO_NAME=$(echo ${{ github.repository }} | awk -F'/' '{print tolower($2)}')" >> $GITHUB_ENV
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
