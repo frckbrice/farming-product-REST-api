@@ -4,7 +4,7 @@ import jwt, {
   JsonWebTokenError,
   TokenExpiredError,
 } from "jsonwebtoken";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
 
 interface DecodedToken extends JwtPayload {
   UserId: string;

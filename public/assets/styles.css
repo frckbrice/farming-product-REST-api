@@ -10,12 +10,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #667eea;
+    background: #2d5a27;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #5a6fd8;
+    background: #3d7a33;
 }
 
 /* Loading animation */
@@ -55,7 +55,7 @@
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #5a8f3e 0%, #6ba347 100%);
 }
 
 /* Card hover effects */

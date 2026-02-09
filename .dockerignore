@@ -1,0 +1,34 @@
+# Dependencies (reinstalled in container)
+node_modules/
+
+# Build output (rebuilt in container)
+dist/
+
+# Environment and secrets (never bake into image)
+.env
+.env.*
+!.env.example
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Tests and coverage (not needed in image)
+tests/
+coverage/
+*.test.ts
+vitest.config.ts
+
+# Docs and misc
+*.md
+!public/**/README.md
+docs/
+.eslintrc.json
+eslint.config.mjs
+.husky/
+
+# Logs and local
+*.log
+*.local

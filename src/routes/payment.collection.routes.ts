@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response, Router } from "express";
 import authCheck from "../middleware/auth-check";
 import {
   collectionResponseAdwa,
+  confirmExternalPayment,
   mobilePaymentCollection,
 } from "../controllers/payment.collection.controller";
 import { z } from "zod";
@@ -170,6 +171,16 @@ paymentCollectionRoute.post(
   authCheck,
   validatePayment,
   mobilePaymentCollection,
+);
+
+/**
+ * External payment confirmation: for API consumers who use their own provider
+ * (Stripe, Flutterwave, M-Pesa, etc.). Body: orderId, amount, currency, externalPaymentId, optional provider.
+ */
+paymentCollectionRoute.post(
+  "/payment/confirm-external",
+  authCheck,
+  confirmExternalPayment,
 );
 
 export default paymentCollectionRoute;

@@ -1,6 +1,6 @@
 import Notification from "../models/notifiation";
 import User from "../models/user";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
 
 export interface ExpoResponse {
   status: "ok" | "error";

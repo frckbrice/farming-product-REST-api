@@ -1,158 +1,13 @@
-import User from "../models/user";
-import Order from "../models/order";
-import Transaction from "../models/transaction";
-import axios, { AxiosError } from "axios";
 import { Request, Response } from "express";
 import sequelize from "../models";
-import sendPushNotificationToUser from "../middleware/send-notification";
-import handleExpoResponse, {
-  ExpoResponse,
-} from "../middleware/handleExpoResponse";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
+import { getPaymentProvider } from "../payment/providers";
+import type { PaymentRequestPayload } from "../payment/types";
+import * as paymentService from "../services/payment.collection.service";
 
-interface PaymentData {
-  meanCode: string;
-  amount: string;
-  currency: string;
-  orderNumber?: string;
-}
-
-interface AdwaResponse {
-  data: {
-    tokenCode?: string;
-    adpFootprint?: string;
-    status?: string;
-    message?: string;
-  };
-}
-
-interface PushNotificationMessage {
-  title: string;
-  text: string;
-}
-
-interface NotificationMessage {
-  title: string;
-  message: string;
-}
-
-interface CollectionWebhookRequest {
-  status: string;
-  footPrint: string;
-  orderNumber: string;
-  moyenPaiement: string;
-  amount: number;
-}
-
-// Payment gateway adwapay configuration
-const MERCHANT_KEY = process.env.ADWA_MERCHANT_KEY;
-const APPLICATION_KEY = process.env.ADWA_APPLICATION_KEY;
-const SUBSCRIPTION_KEY = process.env.ADWA_SUBSCRIPTION_KEY;
-const BaseURL_Adwa = process.env.ADWA_BASE_URL;
-
-if (!MERCHANT_KEY || !APPLICATION_KEY || !SUBSCRIPTION_KEY || !BaseURL_Adwa) {
-  throw new Error("Missing required Adwa payment configuration");
-}
-
-// Get authentication token
-const getAuthToken = async (): Promise<AdwaResponse> => {
-  try {
-    const data = JSON.stringify({
-      application: APPLICATION_KEY,
-    });
-
-    const config = {
-      method: "post",
-      url: `${BaseURL_Adwa}/getADPToken`,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${Buffer.from(MERCHANT_KEY + ":" + SUBSCRIPTION_KEY).toString("base64")}`,
-      },
-      data,
-    };
-
-    const response = await axios(config);
-    return response.data;
-  } catch (error) {
-    if (error instanceof AxiosError && error.response) {
-      throw new AppError(
-        `Failed to get auth token: ${error.response.data.message || error.message}`,
-        error.response.status,
-      );
-    }
-    throw new AppError("Failed to get auth token", 500);
-  }
-};
-
-// Payment initiation
-const paymentCollectRequest = async (
-  data: PaymentData,
-  token: string,
-): Promise<AdwaResponse> => {
-  try {
-    const config = {
-      method: "post",
-      url: `${BaseURL_Adwa}/requestToPay`,
-      headers: {
-        "AUTH-API-TOKEN": `Bearer ${token}`,
-        "AUTH-API-SUBSCRIPTION": SUBSCRIPTION_KEY,
-        "Content-Type": "application/json",
-      },
-      data: JSON.stringify(data),
-    };
-
-    const response = await axios(config);
-    return response.data;
-  } catch (error) {
-    if (error instanceof AxiosError && error.response) {
-      throw new AppError(
-        `Payment request failed: ${error.response.data.message || error.message}`,
-        error.response.status,
-      );
-    }
-    throw new AppError("Payment request failed", 500);
-  }
-};
-
-// Check payment status
-const chargeStatusCheck = async (
-  footPrint: string,
-  meanCode: string,
-  token: string,
-): Promise<AdwaResponse> => {
-  try {
-    const data = JSON.stringify({
-      adpFootprint: footPrint,
-      meanCode,
-    });
-
-    const config = {
-      method: "post",
-      url: `${BaseURL_Adwa}/paymentStatus`,
-      headers: {
-        "AUTH-API-TOKEN": `Bearer ${token}`,
-        "AUTH-API-SUBSCRIPTION": SUBSCRIPTION_KEY,
-        "Content-Type": "application/json",
-      },
-      data,
-    };
-
-    const response = await axios(config);
-    return response.data;
-  } catch (error) {
-    if (error instanceof AxiosError && error.response) {
-      throw new AppError(
-        `Failed to check payment status: ${error.response.data.message || error.message}`,
-        error.response.status,
-      );
-    }
-    throw new AppError("Failed to check payment status", 500);
-  }
-};
-
-// Mobile payment collection
+// Mobile payment collection (provider-agnostic: uses configured provider, default ADWA)
 export const mobilePaymentCollection = async (
-  req: Request<{ orderId: string }, unknown, PaymentData>,
+  req: Request<{ orderId: string }, unknown, PaymentRequestPayload>,
   res: Response,
 ): Promise<void> => {
   const { orderId } = req.params;
@@ -160,61 +15,74 @@ export const mobilePaymentCollection = async (
   const transaction = await sequelize.transaction();
 
   try {
-    const order = await Order.findByPk(orderId);
-    if (!order) {
-      throw new AppError("Order not found or not created", 404);
-    }
+    await paymentService.getOrderForPayment(orderId);
 
-    const userToken = await getAuthToken();
-    if (!userToken.data.tokenCode) {
-      throw new AppError(
-        "Unable to get the token from the payment service providers. Please try again",
-        403,
-      );
-    }
-
-    // Requesting payment initiation
-    paymentData.orderNumber = `order_${orderId}_${Date.now()}`;
-    const paymentRequest = await paymentCollectRequest(
-      paymentData,
-      userToken.data.tokenCode,
+    const provider = getPaymentProvider(
+      (req.query.provider as string) || undefined,
     );
+    const payload: PaymentRequestPayload = {
+      meanCode: paymentData.meanCode,
+      amount:
+        typeof paymentData.amount === "number"
+          ? String(paymentData.amount)
+          : paymentData.amount,
+      currency: paymentData.currency,
+      orderNumber: `order_${orderId}_${Date.now()}`,
+      paymentNumber: paymentData.paymentNumber,
+      feesAmount: paymentData.feesAmount,
+    };
 
-    if (
-      paymentData.meanCode === "MASTERCARD" ||
-      paymentData.meanCode === "VISA"
-    ) {
-      res.json({ message: paymentRequest.data });
+    const paymentRequest = await provider.initiatePayment(payload, orderId);
+
+    if (paymentRequest.redirectUrl) {
+      res.json({
+        message: {
+          ...paymentRequest.raw,
+          CARD_PAY_LINK: paymentRequest.redirectUrl,
+          adpFootprint: paymentRequest.footprint,
+          orderNumber: payload.orderNumber,
+          status: paymentRequest.status,
+        },
+      });
+      return;
+    }
+
+    if (!provider.requiresPollingAfterInitiate?.(paymentData.meanCode)) {
+      res.json({ message: paymentRequest.raw });
+      return;
+    }
+
+    const footprint = paymentRequest.footprint;
+    if (!footprint) {
+      res.status(400).json({
+        message:
+          "Payment initiation did not return a footprint for status check",
+      });
       return;
     }
 
     setTimeout(async () => {
       try {
-        const resOutput = await chargeStatusCheck(
-          paymentRequest.data.adpFootprint as string,
+        const resOutput = await provider.checkStatus(
+          footprint,
           paymentData.meanCode,
-          userToken.data.tokenCode as string,
         );
 
-        if (resOutput.data.status === "T") {
-          await Transaction.update(
+        if (resOutput.success) {
+          await paymentService.completeTransactionAfterPoll(
+            orderId,
             {
-              amount: parseFloat(paymentData.amount),
-              status: "completed",
-              txMethod: paymentData.meanCode,
+              amount: payload.amount,
+              meanCode: paymentData.meanCode,
               currency: paymentData.currency,
-              orderId,
-              txDetails: resOutput.data,
-              updatedAt: new Date(),
             },
-            { where: { orderId }, transaction },
+            resOutput.raw ?? resOutput,
+            transaction,
           );
-
           await transaction.commit();
-
           res.status(200).json({
             status: "success",
-            message: resOutput.data,
+            message: resOutput.raw ?? resOutput,
           });
         } else {
           await transaction.rollback();
@@ -253,120 +121,43 @@ export const mobilePaymentCollection = async (
   }
 };
 
-// Collection webhook response
 export const collectionResponseAdwa = async (
-  req: Request<unknown, unknown, CollectionWebhookRequest>,
+  req: Request<unknown, unknown, paymentService.AdwaWebhookBody>,
   res: Response,
 ): Promise<void> => {
-  const { status, footPrint, orderNumber, moyenPaiement, amount } = req.body;
-  const transaction = await sequelize.transaction();
-
   try {
-    if (status !== "T") {
-      throw new AppError("Payment validation failed", 400);
-    }
-
-    const authToken = await getAuthToken();
-    if (!authToken.data.tokenCode) {
-      throw new AppError("Failed to get authentication token", 500);
-    }
-
-    const checkResponse = await chargeStatusCheck(
-      footPrint,
-      moyenPaiement,
-      authToken.data.tokenCode,
+    const provider = getPaymentProvider("adwa");
+    const checkResponse = await provider.checkStatus(
+      req.body.footPrint,
+      req.body.moyenPaiement,
     );
-
-    if (checkResponse.data.status !== "T") {
-      throw new AppError("Payment validation failed", 400);
-    }
-
-    const order = await Order.findByPk(orderNumber);
-    if (!order) {
-      throw new AppError("Order not found", 404);
-    }
-
-    const [sellerData, buyerData] = await Promise.all([
-      User.findByPk(order.sellerId),
-      User.findByPk(order.buyerId),
-    ]);
-
-    await Promise.all([
-      Transaction.update(
-        {
-          amount,
-          status: "completed",
-          txMethod: moyenPaiement,
-          txDetails: checkResponse.data,
-          updatedAt: new Date(),
-        },
-        { where: { orderId: order.id }, transaction },
-      ),
-      Order.update(
-        {
-          status: "processing",
-          updatedAt: new Date(),
-        },
-        { where: { id: order.id }, transaction },
-      ),
-    ]);
-
-    // Send notifications
-    if (sellerData?.expoPushToken) {
-      const notificationMessage: NotificationMessage = {
-        title: "New Order",
-        message: "Congratulations! You have received a New Order.",
-      };
-
-      const pushMessage: PushNotificationMessage = {
-        title: notificationMessage.title,
-        text: notificationMessage.message,
-      };
-
-      const result = await sendPushNotificationToUser(
-        sellerData.expoPushToken,
-        pushMessage,
-      );
-
-      if (result && "status" in result) {
-        await handleExpoResponse(
-          result as ExpoResponse,
-          order.sellerId,
-          notificationMessage,
-        );
-      }
-    }
-
-    if (buyerData?.expoPushToken) {
-      const notificationMessage: NotificationMessage = {
-        title: "Payment Done",
-        message:
-          "Your Payment has been Successfully Made and Your order has started",
-      };
-
-      const pushMessage: PushNotificationMessage = {
-        title: notificationMessage.title,
-        text: notificationMessage.message,
-      };
-
-      const result = await sendPushNotificationToUser(
-        buyerData.expoPushToken,
-        pushMessage,
-      );
-
-      if (result && "status" in result) {
-        await handleExpoResponse(
-          result as ExpoResponse,
-          order.buyerId,
-          notificationMessage,
-        );
-      }
-    }
-
-    await transaction.commit();
-    res.status(200).json({ message: "Payment processed successfully" });
+    const result = await paymentService.processAdwaWebhook(
+      req.body,
+      checkResponse,
+    );
+    res.status(200).json(result);
   } catch (error) {
-    await transaction.rollback();
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ message: error.message });
+    } else {
+      res.status(500).json({
+        message:
+          error instanceof Error
+            ? error.message
+            : "An error occurred during payment processing",
+      });
+    }
+  }
+};
+
+export const confirmExternalPayment = async (
+  req: Request<unknown, unknown, paymentService.ConfirmExternalPaymentBody>,
+  res: Response,
+): Promise<void> => {
+  try {
+    const result = await paymentService.confirmExternalPayment(req.body);
+    res.status(200).json(result);
+  } catch (error) {
     if (error instanceof AppError) {
       res.status(error.statusCode).json({ message: error.message });
     } else {

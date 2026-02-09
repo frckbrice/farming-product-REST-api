@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
-// app.ts
-const dotenv_1 = tslib_1.__importDefault(require("dotenv"));
+// app.ts — env must load first so CLOUDINARY_URL is valid before cloudinary SDK loads
+require("./src/env");
 const express_1 = tslib_1.__importDefault(require("express"));
 const body_parser_1 = tslib_1.__importDefault(require("body-parser"));
 const rateLimiter_1 = tslib_1.__importDefault(require("./src/middleware/rateLimiter"));
@@ -14,29 +14,63 @@ const errorHandler_1 = tslib_1.__importDefault(require("./src/middleware/errorHa
 const swagger_ui_express_1 = tslib_1.__importDefault(require("swagger-ui-express"));
 const swagger_jsdoc_1 = tslib_1.__importDefault(require("swagger-jsdoc"));
 const helmet_1 = tslib_1.__importDefault(require("helmet"));
+const errors_1 = require("./src/errors");
 // Define the server configuration
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "5002", 10);
 const hostname = process.env.DB_HOST || "localhost";
 const isDev = process.env.NODE_ENV !== "production";
-dotenv_1.default.config();
+// Resolve project root so public/ works in both dev (__dirname = project root) and prod (__dirname = dist)
+const projectRoot = __dirname.endsWith(path_1.default.sep + "dist") ? path_1.default.join(__dirname, "..") : __dirname;
 const app = (0, express_1.default)();
-// Swagger options
+// Base URL for API docs (same origin as server)
+const apiBaseUrl = process.env.API_BASE_URL || `http://localhost:${port}`;
+// Swagger options — platform for farmers and customers
 const doc = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "Farming products API",
-            version: "1.0.0",
-            description: "API Documentation for Farming products",
+            title: "Farm Marketplace API",
+            version: "2.0.0",
+            description: `**Farm Marketplace API** is the central platform that connects **farmers** (sellers) with **customers** (buyers) for farm products.
+
+**Who consumes this API**  
+This API is intended to be consumed by **client applications** only — for example, a **web app** or a **mobile app**. The API runs on the server; it does not run on or access mobile devices. Only clients that you build (web or mobile) can call this API.
+
+## For Farmers
+- Register as a farmer, list your products, set prices (per kg, per unit, wholesale).
+- Manage product catalog, update/remove listings, and handle orders from buyers.
+- Receive and manage orders, update dispatch details, and get buyer reviews.
+
+## For Customers
+- Browse and search products by name, category, and price range.
+- Place orders, manage shipping addresses, and pay via integrated transactions.
+- Leave reviews for farmers and track order status.
+
+## Security (enforced in the API)
+Security is enforced **in the code** on the server: protected routes require a valid JWT and ownership/role checks are applied where required.
+- **Authentication**: JWT Bearer tokens; use \`Authorization: Bearer <token>\` for protected routes.
+- **Authorization**: Role-based access (farmer vs buyer); resource ownership checks (e.g. only product owner can update/delete).
+- **Rate limiting**: Global rate limit per IP to prevent abuse (see 429 responses).
+- **Input validation**: Request bodies validated (e.g. Zod); invalid payloads return 400 with field errors.
+- **Helmet**: Security headers (X-Content-Type-Options, X-Frame-Options, etc.) applied to all responses.
+- **HTTPS**: Use HTTPS in production; tokens and credentials must not be sent over plain HTTP.`,
             contact: {
-                name: "Farming products",
-            }
+                name: "Farm Marketplace API",
+            },
         },
         servers: [
-            {
-                url: "http://localhost:3000/api/v1",
-                description: "Development on Local server",
-            }
+            { url: `${apiBaseUrl}/api/v2`, description: "Current server (development or production)" },
+            { url: "http://localhost:5002/api/v2", description: "Local default (port 5002)" },
+        ],
+        tags: [
+            { name: "Authentication", description: "Sign up, login, JWT refresh — for both farmers and customers (OTP disabled; keeping auth simple)" },
+            { name: "Products", description: "Product catalog — farmers list/sell; customers browse/search" },
+            { name: "Orders", description: "Orders — customers place; farmers fulfill and dispatch" },
+            { name: "Reviews", description: "Buyer reviews — customers review farmers/sellers" },
+            { name: "User profile", description: "Profile and avatar — all authenticated users" },
+            { name: "Payment Collection", description: "Payments — customers pay for orders" },
+            { name: "Notifications", description: "Push notifications — optional for clients (e.g. web or mobile)" },
+            { name: "Health", description: "Health check — API and database status for monitoring" },
         ],
         components: {
             securitySchemes: {
@@ -44,10 +78,10 @@ const doc = {
                     type: "http",
                     scheme: "bearer",
                     bearerFormat: "JWT",
+                    description: "Obtain token via POST /auth/login. Send as: Authorization: Bearer <accessToken>",
                 },
             },
             schemas: {
-                // Reference your main models here for Swagger UI
                 Product: {
                     type: "object",
                     required: ["productName", "productCat", "priceType", "price"],
@@ -72,21 +106,60 @@ const doc = {
                         userId: "uuid-1234"
                     }
                 },
-                // Add more models as needed
             },
         },
-        security: [
-            {
-                bearerAuth: [],
+        security: [{ bearerAuth: [] }],
+        paths: {
+            "/health": {
+                get: {
+                    tags: ["Health"],
+                    summary: "Health check",
+                    description: "Returns API and database status. Use for monitoring, load balancers, and uptime checks. No authentication required.",
+                    operationId: "getHealth",
+                    security: [],
+                    responses: {
+                        "200": {
+                            description: "API and database are running",
+                            content: {
+                                "application/json": {
+                                    schema: {
+                                        type: "object",
+                                        properties: {
+                                            status: { type: "string", example: "success" },
+                                            message: { type: "string", example: "Farm Marketplace API is running" },
+                                            database: { type: "string", example: "connected" },
+                                            timestamp: { type: "string", format: "date-time" },
+                                            version: { type: "string", example: "2.0.0" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        "503": {
+                            description: "API is up but database connection failed",
+                            content: {
+                                "application/json": {
+                                    schema: {
+                                        type: "object",
+                                        properties: {
+                                            status: { type: "string", example: "error" },
+                                            database: { type: "string", example: "disconnected" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             },
-        ],
+        },
     },
     apis: isDev ? ["./src/routes/*.ts"] : ["./dist/routes/*.js"]
 };
 // Update this to '.ts' as files are converted to TypeScript
 const swaggerSpec = (0, swagger_jsdoc_1.default)(doc);
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerJsDoc(doc)));
-const imagesDir = path_1.default.join(__dirname, "/src/public/images");
+const imagesDir = path_1.default.join(projectRoot, "public", "assets", "images");
 // Ensure the directory exists at app start
 if (!fs_1.default.existsSync(imagesDir)) {
     fs_1.default.mkdirSync(imagesDir, { recursive: true });
@@ -94,12 +167,26 @@ if (!fs_1.default.existsSync(imagesDir)) {
 // Middleware setup
 app.use(rateLimiter_1.default);
 app.set("trust proxy", 1);
-app.use((0, helmet_1.default)());
+// Allow Unsplash images (hero bg, cards, etc.) — default CSP blocks external img-src
+app.use((0, helmet_1.default)({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https://images.unsplash.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            scriptSrc: ["'self'"],
+            connectSrc: ["'self'"],
+        },
+    },
+}));
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)());
-app.use("/public/images", express_1.default.static("public/images"));
+app.use("/public", express_1.default.static(path_1.default.join(projectRoot, "public")));
+app.use("/public/assets", express_1.default.static(path_1.default.join(projectRoot, "public", "assets")));
+app.use("/public/assets/images", express_1.default.static(path_1.default.join(projectRoot, "public", "assets", "images")));
 // Routes setup
-app.use("/api/v1", routes_1.default);
+app.use("/api/v2", routes_1.default);
 // @ts-ignore-next-line
 app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
 // Swagger default route definition
@@ -119,19 +206,37 @@ app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.de
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Hello World!! Farming products_2"
+ *                   example: "Hello World!! Farming products"
  */
 app.get("/", (req, res) => {
-    res.send("Hello World!! Farming products_2");
+    res.sendFile(path_1.default.join(projectRoot, "public", "index.html"));
 });
-// Error handling middleware
+// 404 handler - serve custom 404 page for HTML requests, JSON for API requests
+app.use((req, res, next) => {
+    var _a;
+    // Check if the request is for an API endpoint or expects JSON
+    const isAPIRequest = req.path.startsWith('/api/v2') || ((_a = req.get('Accept')) === null || _a === void 0 ? void 0 : _a.includes('application/json'));
+    if (isAPIRequest) {
+        // For API requests, return JSON error
+        next(new errors_1.AppError(`Not Found - ${req.originalUrl}`, 404));
+    }
+    else {
+        // For web requests, serve the custom 404 page
+        res.status(404).sendFile(path_1.default.join(projectRoot, "public", "404.html"));
+    }
+});
+// Error handling middleware - must be last
 app.use(errorHandler_1.default);
-app.listen(port, () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    try {
-        console.log(`Server running on http${!isDev ? 's' : ''}://${!isDev ? process.env.DB_HOST : hostname}:${port} `);
-    }
-    catch (error) {
-        console.error("Error running migrations:", error);
-    }
-}));
+// Only start the server if we're not in a test environment
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+        try {
+            console.log("✅ Database is up to date.");
+        }
+        catch (error) {
+            console.error("❌ Unable to connect to the database:", error);
+        }
+        console.log(`✅ Server running on http://localhost:${port}`);
+    }));
+}
 exports.default = app;

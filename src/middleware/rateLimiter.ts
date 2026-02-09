@@ -1,5 +1,5 @@
 import { rateLimit, Options } from "express-rate-limit";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
 
 // Rate limiter configuration
 const rateLimitConfig: Partial<Options> = {

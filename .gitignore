@@ -18,3 +18,9 @@ dist/
 
 # Local files
 *.local 
+
+farming-product-REST-api/docs/
+docs/
+
+
+

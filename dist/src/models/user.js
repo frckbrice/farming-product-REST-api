@@ -74,9 +74,9 @@ tslib_1.__decorate([
 ], User.prototype, "facebookId", void 0);
 tslib_1.__decorate([
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.BIGINT,
+        type: sequelize_typescript_1.DataType.STRING,
     }),
-    tslib_1.__metadata("design:type", Number)
+    tslib_1.__metadata("design:type", String)
 ], User.prototype, "phoneNum", void 0);
 tslib_1.__decorate([
     (0, sequelize_typescript_1.Column)({

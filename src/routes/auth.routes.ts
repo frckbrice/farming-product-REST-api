@@ -3,9 +3,9 @@ import {
   verifyPhone,
   register_user,
   logIn,
-  verifyOtp,
+  // verifyOtp,   // OTP auth disabled — keeping authentication simple (WIP)
   authHandler,
-  sendNewOTP,
+  // sendNewOTP,  // OTP auth disabled — keeping authentication simple
   refreshToken,
 } from "../controllers/auth.controller";
 
@@ -53,34 +53,33 @@ const authRouter: Router = express.Router();
  */
 authRouter.post("/signup", verifyPhone);
 
-// verify OTP
-
-/**
- * @swagger
- * /auth/verifyOTP:
- *  post:
- *    summary: phone verification api
- *    tags: [Authentication]
- *    requestBody:
- *      required: true
- *      content:
- *        application/json:
- *          schema:
- *            type: object
- *            properties:
- *              email:
- *                type: string
- *              otp:
- *                type: string
- *    responses:
- *      200:
- *        description: The OTP sent successfully
- *
- *      500:
- *        description: Some server error
- *
- */
-authRouter.post("/verifyOTP", verifyOtp);
+// --- OTP verification disabled: keeping authentication simple ---
+// /**
+//  * @swagger
+//  * /auth/verifyOTP:
+//  *  post:
+//  *    summary: phone verification api
+//  *    tags: [Authentication]
+//  *    requestBody:
+//  *      required: true
+//  *      content:
+//  *        application/json:
+//  *          schema:
+//  *            type: object
+//  *            properties:
+//  *              email:
+//  *                type: string
+//  *              otp:
+//  *                type: string
+//  *    responses:
+//  *      200:
+//  *        description: The OTP sent successfully
+//  *
+//  *      500:
+//  *        description: Some server error
+//  *
+//  */
+// authRouter.post("/verifyOTP", verifyOtp);
 
 // user registration
 
@@ -175,32 +174,31 @@ authRouter.put("/signup/:userId", register_user);
  */
 authRouter.post("/login", logIn);
 
-// send OTP
-
-/**
- * @swagger
- * /auth/sendOTP:
- *  post:
- *    summary: phone verification api
- *    tags: [Authentication]
- *    requestBody:
- *      required: true
- *      content:
- *        application/json:
- *          schema:
- *            type: object
- *            properties:
- *              email:
- *                type: string
- *    responses:
- *      200:
- *        description: The OTP sent successfully
- *
- *      500:
- *        description: Some server error
- *
- */
-authRouter.post("/sendOTP/", sendNewOTP);
+// --- OTP send disabled: keeping authentication simple ---
+// /**
+//  * @swagger
+//  * /auth/sendOTP:
+//  *  post:
+//  *    summary: phone verification api
+//  *    tags: [Authentication]
+//  *    requestBody:
+//  *      required: true
+//  *      content:
+//  *        application/json:
+//  *          schema:
+//  *            type: object
+//  *            properties:
+//  *              email:
+//  *                type: string
+//  *    responses:
+//  *      200:
+//  *        description: The OTP sent successfully
+//  *
+//  *      500:
+//  *        description: Some server error
+//  *
+//  */
+// authRouter.post("/sendOTP/", sendNewOTP);
 
 // oAuth
 
