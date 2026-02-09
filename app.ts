@@ -157,7 +157,10 @@ Security is enforced **in the code** on the server: protected routes require a v
       },
     },
   },
-  apis: isDev ? ["./src/routes/*.ts"] : ["./dist/routes/*.js"]
+  // In production, compiled routes live at dist/src/routes/*.js (tsc preserves src/ under outDir)
+  apis: isDev
+    ? [path.join(projectRoot, "src", "routes", "*.ts")]
+    : [path.join(projectRoot, "dist", "src", "routes", "*.js")],
 };
 
 // Update this to '.ts' as files are converted to TypeScript
