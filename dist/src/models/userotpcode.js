@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
+/**
+ * UserOTPCode model — table kept for DB schema.
+ * OTP authentication is disabled; we are keeping authentication simple.
+ */
 const sequelize_typescript_1 = require("sequelize-typescript");
 const user_1 = tslib_1.__importDefault(require("./user"));
 let UserOTPCode = class UserOTPCode extends sequelize_typescript_1.Model {

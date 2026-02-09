@@ -9,6 +9,8 @@
     "start": "node dist/app.js",
     "dev": "nodemon ./app.ts",
     "build": "tsc -p tsconfig.json",
+    "db:migrate": "ts-node scripts/run-migrations.ts",
+    "db:seed": "ts-node scripts/seed-db.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",

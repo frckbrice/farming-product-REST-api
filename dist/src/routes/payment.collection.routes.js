@@ -153,4 +153,9 @@ paymentCollectionRoute.post("/webhook/adwapay", payment_collection_controller_1.
  *              description: Too many requests
  */
 paymentCollectionRoute.post("/:orderId/paymentCollection/mobile", auth_check_1.default, validatePayment, payment_collection_controller_1.mobilePaymentCollection);
+/**
+ * External payment confirmation: for API consumers who use their own provider
+ * (Stripe, Flutterwave, M-Pesa, etc.). Body: orderId, amount, currency, externalPaymentId, optional provider.
+ */
+paymentCollectionRoute.post("/payment/confirm-external", auth_check_1.default, payment_collection_controller_1.confirmExternalPayment);
 exports.default = paymentCollectionRoute;

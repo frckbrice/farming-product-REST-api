@@ -17,6 +17,7 @@ export const MockSequelize = vi.fn(() => mockSequelizeInstance);
 export const mockModels = {
     User: {
         findOne: vi.fn().mockResolvedValue(null),
+        findByPk: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockImplementation((data) => Promise.resolve({
             id: 'test-id',
             email: data.email,
@@ -39,15 +40,20 @@ export const mockModels = {
     },
     Product: {
         findOne: vi.fn().mockResolvedValue(null),
+        findByPk: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'product-id' })),
         findAll: vi.fn().mockResolvedValue([]),
+        findAndCountAll: vi.fn().mockResolvedValue({ count: 0, rows: [] }),
         update: vi.fn().mockResolvedValue([1]),
         destroy: vi.fn().mockResolvedValue(1),
     },
     Order: {
         findOne: vi.fn().mockResolvedValue(null),
+        findByPk: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'order-id' })),
         findAll: vi.fn().mockResolvedValue([]),
+        findAndCountAll: vi.fn().mockResolvedValue({ count: 0, rows: [] }),
+        update: vi.fn().mockResolvedValue([1]),
     },
     Transaction: {
         findOne: vi.fn().mockResolvedValue(null),
@@ -56,13 +62,19 @@ export const mockModels = {
     },
     BuyerReview: {
         findOne: vi.fn().mockResolvedValue(null),
+        findByPk: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'review-id' })),
         findAll: vi.fn().mockResolvedValue([]),
+        findAndCountAll: vi.fn().mockResolvedValue({ count: 0, rows: [] }),
+        update: vi.fn().mockResolvedValue([1]),
+        destroy: vi.fn().mockResolvedValue(1),
     },
     Notification: {
         findOne: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'notification-id' })),
         findAll: vi.fn().mockResolvedValue([]),
+        findAndCountAll: vi.fn().mockResolvedValue({ count: 0, rows: [] }),
+        update: vi.fn().mockResolvedValue([1]),
     },
     UserOTPCode: {
         findOne: vi.fn().mockResolvedValue(null),
@@ -90,6 +102,37 @@ vi.mock('../../src/models/role', () => ({
 vi.mock('../../src/models/userotpcode', () => ({
     __esModule: true,
     default: mockModels.UserOTPCode,
+}));
+
+vi.mock('../../src/models/product', () => ({
+    __esModule: true,
+    default: mockModels.Product,
+}));
+
+vi.mock('../../src/models/order', () => ({
+    __esModule: true,
+    default: mockModels.Order,
+}));
+
+vi.mock('../../src/models/transaction', () => ({
+    __esModule: true,
+    default: mockModels.Transaction,
+}));
+
+vi.mock('../../src/models/buyerreview', () => ({
+    __esModule: true,
+    default: mockModels.BuyerReview,
+}));
+
+vi.mock('../../src/models/notifiation', () => ({
+    __esModule: true,
+    default: mockModels.Notification,
+}));
+
+// Prevent models/index from loading real Sequelize and model files (which triggers sequelize-typescript)
+vi.mock('../../src/models', () => ({
+    __esModule: true,
+    default: mockSequelizeInstance,
 }));
 
 // Mock cloudinary

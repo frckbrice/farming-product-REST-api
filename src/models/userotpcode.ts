@@ -1,3 +1,7 @@
+/**
+ * UserOTPCode model — table kept for DB schema.
+ * OTP authentication is disabled; we are keeping authentication simple.
+ */
 import {
   Table,
   Column,

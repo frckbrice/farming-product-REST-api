@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { sign, SignOptions, Secret } from 'jsonwebtoken';
 import { hashSync } from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,7 +10,7 @@ export interface TestUser {
     firstName?: string;
     lastName?: string;
     roleId?: string;
-    phoneNum?: number;
+    phoneNum?: string;
     country?: string;
     address?: string;
     imageUrl?: string;
@@ -33,7 +34,7 @@ export const createTestUser = (overrides: Partial<TestUser> = {}): TestUser => {
         firstName: 'Test',
         lastName: 'User',
         roleId: uuidv4(),
-        phoneNum: 1234567890,
+        phoneNum: "1234567890",
         country: 'Test Country',
         address: 'Test Address',
         imageUrl: 'https://example.com/image.jpg',
@@ -98,9 +99,10 @@ export const mockFacebookProfile = {
     },
 };
 
-export const generateOTP = (): string => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-};
+// OTP auth disabled — keeping authentication simple; left for possible future use.
+// export const generateOTP = (): string => {
+//     return Math.floor(1000 + Math.random() * 9000).toString();
+// };
 
 export const mockCloudinaryResponse = {
     secure_url: 'https://example.com/uploaded-image.jpg',
@@ -124,4 +126,29 @@ export const mockSMSResponse = {
     status: 'queued',
     to: '+1234567890',
     from: '+0987654321',
-}; 
+};
+
+/** Build mock Express request for controller tests */
+export const mockRequest = <P = object, B = object, Q = object>(
+    overrides: { params?: P; body?: B; query?: Q; file?: { path: string }; userData?: { UserId: string } } = {},
+): { params: P; body: B; query: Q; file?: { path: string }; userData?: { UserId: string } } => {
+    return {
+        params: {} as P,
+        body: {} as B,
+        query: {} as Q,
+        ...overrides,
+    };
+};
+
+/** Build mock Express response (spy on status + json) for controller tests */
+export const mockResponse = () => {
+    const res: { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> } = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockReturnThis(),
+        end: vi.fn().mockReturnThis(),
+    };
+    return res;
+};
+
+/** Mock next function for controller tests */
+export const mockNext = () => vi.fn(); 

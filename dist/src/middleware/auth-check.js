@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const jsonwebtoken_1 = tslib_1.__importStar(require("jsonwebtoken"));
-const customErrors_1 = tslib_1.__importDefault(require("../errors/customErrors"));
+const errors_1 = require("../errors");
 const authCheck = (req, res, next) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         // Check if authorization header is present
@@ -27,7 +27,7 @@ const authCheck = (req, res, next) => tslib_1.__awaiter(void 0, void 0, void 0, 
         if (decodedToken.exp && decodedToken.exp < Date.now() / 1000) {
             res.status(401).json({
                 auth: false,
-                message: "Your session has expired"
+                message: "Your session has expired",
             });
             return;
         }
@@ -46,18 +46,18 @@ const authCheck = (req, res, next) => tslib_1.__awaiter(void 0, void 0, void 0, 
     catch (error) {
         if (error instanceof jsonwebtoken_1.TokenExpiredError) {
             res.status(401).json({
-                message: "Your session has expired"
+                message: "Your session has expired",
             });
             return;
         }
         if (error instanceof jsonwebtoken_1.JsonWebTokenError) {
             res.status(401).json({
-                message: "Invalid token"
+                message: "Invalid token",
             });
             return;
         }
         // Handle unexpected errors
-        next(new customErrors_1.default("Authentication error", 500));
+        next(new errors_1.AppError("Authentication error", 500));
     }
 });
 exports.default = authCheck;

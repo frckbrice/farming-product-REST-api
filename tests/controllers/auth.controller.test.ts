@@ -32,6 +32,7 @@ beforeAll(() => {
   process.env.FARMING_PRODUCTS_HOST = 'smtp.test.com';
   process.env.GMAIL_USER = 'test@test.com';
   process.env.GMAIL_APP_PASSWORD = 'test_pass';
+  process.env.GMAIL_AUTH_CLIENTID = 'test_google_client_id';
   process.env.FARMING_PRODUCTS_SMS_USER = 'test_sms_user';
   process.env.FARMING_PRODUCTS_SMS_PASSWORD = 'test_sms_pass';
   process.env.JWT_SECRET = 'test_secret';
@@ -51,30 +52,37 @@ vi.mock('bcryptjs', () => ({
   compare: vi.fn().mockResolvedValue(true),
 }));
 
-// Mock cloudinary
+// Mock cloudinary (always return secure_url for uploads)
 vi.mock('cloudinary', () => ({
   v2: {
     config: vi.fn(),
     uploader: {
-      upload: vi.fn().mockResolvedValue({ secure_url: 'test_url' }),
+      upload: vi.fn().mockImplementation(() => Promise.resolve({ secure_url: 'https://test.cloudinary.com/image.jpg' })),
     },
   },
 }));
 
-// Mock jwt
+// Mock jwt (include JsonWebTokenError so controller's instanceof check works)
 vi.mock('jsonwebtoken', () => {
   const sign = vi.fn()
     .mockReturnValueOnce('test_token')
     .mockReturnValueOnce('test_refresh_token');
-
+  class JsonWebTokenError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'JsonWebTokenError';
+    }
+  }
   return {
     __esModule: true,
     default: {
       sign,
-      verify: vi.fn().mockReturnValue({ id: 'test_id' }),
+      verify: vi.fn().mockReturnValue({ id: 'test_id', UserId: 'test-id', email: 'test@example.com', exp: Math.floor(Date.now() / 1000) + 3600 }),
+      JsonWebTokenError,
     },
     sign,
-    verify: vi.fn().mockReturnValue({ id: 'test_id' }),
+    verify: vi.fn().mockReturnValue({ id: 'test_id', UserId: 'test-id', email: 'test@example.com', exp: Math.floor(Date.now() / 1000) + 3600 }),
+    JsonWebTokenError,
   };
 });
 
@@ -122,9 +130,10 @@ vi.mock('../../src/models', () => ({
       create: vi.fn().mockImplementation((data) => Promise.resolve({ id: 'role-id', roleName: data.roleName })),
       findAll: vi.fn().mockResolvedValue([]),
     },
+    // OTP auth disabled — keeping authentication simple; mock kept for model loading.
     UserOTPCode: {
       findOne: vi.fn().mockResolvedValue(null),
-      create: vi.fn().mockImplementation((data) => Promise.resolve({
+      create: vi.fn().mockImplementation((data: { otp?: string; userId?: string }) => Promise.resolve({
         id: 'otp-id',
         otp: data.otp,
         userId: data.userId,
@@ -137,6 +146,7 @@ vi.mock('../../src/models', () => ({
 
 // Import app after mocking
 import app from '../../app';
+import * as authService from '../../src/services/auth.service';
 
 describe('Auth Controller', () => {
   beforeEach(() => {
@@ -149,12 +159,12 @@ describe('Auth Controller', () => {
     vi.resetAllMocks();
   });
 
-  describe('POST /api/v1/auth/signup', () => {
+  describe('POST /api/v2/auth/signup', () => {
     it('should return 400 if required fields are missing', async () => {
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({});
-      
+
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('status', 'fail');
       expect(response.body).toHaveProperty('message', 'Empty input fields');
@@ -162,7 +172,7 @@ describe('Auth Controller', () => {
 
     it('should return 400 if password is too short', async () => {
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({
           email: 'test@example.com',
           password: '123', // Too short
@@ -170,7 +180,7 @@ describe('Auth Controller', () => {
           phoneNum: '1234567890',
           country: 'US',
         });
-      
+
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('status', 'fail');
       expect(response.body).toHaveProperty('message', 'Password must be at least 8 characters');
@@ -178,7 +188,7 @@ describe('Auth Controller', () => {
 
     it('should return 400 if email is invalid', async () => {
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({
           email: 'invalid-email',
           password: 'password123',
@@ -186,7 +196,7 @@ describe('Auth Controller', () => {
           phoneNum: '1234567890',
           country: 'US',
         });
-      
+
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('status', 'fail');
       expect(response.body).toHaveProperty('message', 'Invalid email entered');
@@ -194,7 +204,7 @@ describe('Auth Controller', () => {
 
     it('should return 400 if role is invalid', async () => {
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -202,7 +212,7 @@ describe('Auth Controller', () => {
           phoneNum: '1234567890',
           country: 'US',
         });
-      
+
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('status', 'fail');
       expect(response.body.message).toContain('Invalid role');
@@ -213,7 +223,7 @@ describe('Auth Controller', () => {
       mockModels.User.findOne.mockResolvedValueOnce(createTestUser());
 
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -221,13 +231,13 @@ describe('Auth Controller', () => {
           phoneNum: '1234567890',
           country: 'US',
         });
-      
+
       expect(response.status).toBe(409);
       expect(response.body).toHaveProperty('status', 'fail');
       expect(response.body).toHaveProperty('message', 'This email is already registered.');
     });
 
-    it('should create user and send OTP on successful signup', async () => {
+    it('should create user on successful signup', async () => {
       // Mock User.findOne to return null (user doesn't exist)
       mockModels.User.findOne.mockResolvedValueOnce(null);
 
@@ -238,15 +248,8 @@ describe('Auth Controller', () => {
       const newUser = createTestUser();
       mockModels.User.create.mockResolvedValueOnce(newUser);
 
-      // Mock UserOTPCode.create
-      mockModels.UserOTPCode.create.mockResolvedValueOnce({
-        userId: newUser.id,
-        otp: 'hashed_otp',
-        expiredAt: new Date(Date.now() + 10 * 60 * 1000),
-      });
-
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -254,19 +257,22 @@ describe('Auth Controller', () => {
           phoneNum: '1234567890',
           country: 'US',
         });
-      
+
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('message', 'OTP sent successfully, please verify the OTP');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Registration successful. Complete your profile or log in with your email and password.',
+      );
       expect(response.body).toHaveProperty('email', newUser.email);
       expect(response.body).toHaveProperty('userID', newUser.id);
-    }, 10000); // Increase timeout to 10 seconds
+    }, 10000);
 
     it('should return 500 if database error occurs', async () => {
       // Mock User.findOne to throw an error
       mockModels.User.findOne.mockRejectedValueOnce(new Error('Database error'));
 
       const response = await request(app)
-        .post('/api/v1/auth/signup')
+        .post('/api/v2/auth/signup')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -274,96 +280,37 @@ describe('Auth Controller', () => {
           phoneNum: '1234567890',
           country: 'US',
         });
-      
+
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('status', 'fail');
       expect(response.body).toHaveProperty('message');
     });
   });
 
-  describe('POST /api/v1/auth/verifyOTP', () => {
-    it('should return 401 if user does not exist', async () => {
-      mockModels.User.findOne.mockResolvedValueOnce(null);
+  // --- OTP verification disabled: keeping authentication simple ---
+  // describe('POST /api/v2/auth/verifyOTP', () => {
+  //   it('should return 200 and message to log in with email and password', async () => {
+  //     const response = await request(app)
+  //       .post('/api/v2/auth/verifyOTP')
+  //       .send({
+  //         email: 'test@example.com',
+  //         otp: '1234',
+  //       });
+  //
+  //     expect(response.status).toBe(200);
+  //     expect(response.body).toHaveProperty(
+  //       'message',
+  //       'Please log in with your email and password.',
+  //     );
+  //   });
+  // });
 
-      const response = await request(app)
-        .post('/api/v1/auth/verifyOTP')
-        .send({
-          email: 'test@example.com',
-          otp: '1234',
-        });
-
-      expect(response.status).toBe(401);
-      expect(response.body).toHaveProperty('message', 'The User does not exist. Please sign up!');
-    });
-
-    it('should return 404 if OTP record not found', async () => {
-      const user = createTestUser();
-      mockModels.User.findOne.mockResolvedValueOnce(user);
-      mockModels.UserOTPCode.findOne.mockResolvedValueOnce(null);
-
-      const response = await request(app)
-        .post('/api/v1/auth/verifyOTP')
-        .send({
-          email: user.email,
-          otp: '1234',
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty('message', 'Server Error! Please Try Again Later by signing up.');
-    });
-
-    it('should return 404 if OTP has expired', async () => {
-      const user = createTestUser();
-      mockModels.User.findOne.mockResolvedValueOnce(user);
-      mockModels.UserOTPCode.findOne.mockResolvedValueOnce({
-        userId: user.id,
-        otp: 'hashed_otp',
-        expiredAt: new Date(Date.now() - 1000), // Expired
-      });
-
-      const response = await request(app)
-        .post('/api/v1/auth/verifyOTP')
-        .send({
-          email: user.email,
-          otp: '1234',
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty('message', 'Code has expired. Please request again');
-    });
-
-    it('should verify OTP successfully', async () => {
-      const user = createTestUser();
-      mockModels.User.findOne.mockResolvedValueOnce(user);
-      mockModels.UserOTPCode.findOne.mockResolvedValueOnce({
-        userId: user.id,
-        otp: 'hashed_otp',
-        expiredAt: new Date(Date.now() + 10 * 60 * 1000),
-      });
-
-      // Mock bcryptjs compare to return true
-      const { compare } = await import('bcryptjs');
-      (compare as any).mockResolvedValueOnce(true);
-
-      const response = await request(app)
-        .post('/api/v1/auth/verifyOTP')
-        .send({
-          email: user.email,
-          otp: '1234',
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('message', 'Successfully verified!');
-      expect(response.body).toHaveProperty('userId', user.id);
-    });
-  });
-
-  describe('POST /api/v1/auth/login', () => {
+  describe('POST /api/v2/auth/login', () => {
     it('should return 403 if user does not exist', async () => {
       mockModels.User.findOne.mockResolvedValueOnce(null);
 
       const response = await request(app)
-        .post('/api/v1/auth/login')
+        .post('/api/v2/auth/login')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -379,7 +326,7 @@ describe('Auth Controller', () => {
       (compare as any).mockResolvedValueOnce(false);
 
       const response = await request(app)
-        .post('/api/v1/auth/login')
+        .post('/api/v2/auth/login')
         .send({
           email: 'test@example.com',
           password: 'wrongpassword',
@@ -403,7 +350,7 @@ describe('Auth Controller', () => {
         .mockReturnValueOnce('test_refresh_token');
 
       const response = await request(app)
-        .post('/api/v1/auth/login')
+        .post('/api/v2/auth/login')
         .send({
           email: testUser.email,
           password: 'password123',
@@ -423,7 +370,7 @@ describe('Auth Controller', () => {
       mockModels.User.findOne.mockRejectedValueOnce(new Error('Database error'));
 
       const response = await request(app)
-        .post('/api/v1/auth/login')
+        .post('/api/v2/auth/login')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -431,7 +378,120 @@ describe('Auth Controller', () => {
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('status', 'fail');
-      expect(response.body).toHaveProperty('message', 'Database error');
+      expect(response.body).toHaveProperty('message', 'An unexpected error occurred');
+    });
+  });
+
+  describe('POST /api/v2/auth/refreshToken', () => {
+    it('should return 401 when Authorization header is missing', async () => {
+      const response = await request(app)
+        .post('/api/v2/auth/refreshToken');
+
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty(
+        'message',
+        'You are either not logged in or your session has expired',
+      );
+    });
+
+    it('should return 200 and new access token when refresh token is valid', async () => {
+      const { generateTestRefreshToken } = await import('../utils/testHelpers');
+      const refreshTokenValue = generateTestRefreshToken(
+        { id: 'test-id', email: 'test@example.com' },
+        '7d',
+      );
+      const jwt = await import('jsonwebtoken');
+      (jwt.default.verify as ReturnType<typeof vi.fn>).mockReturnValue({
+        UserId: 'test-id',
+        email: 'test@example.com',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      });
+      (jwt.default.sign as ReturnType<typeof vi.fn>).mockReturnValue('new_access_token');
+
+      const response = await request(app)
+        .post('/api/v2/auth/refreshToken')
+        .set('Authorization', `Bearer ${refreshTokenValue}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'Token refreshed successfully');
+      expect(response.body).toHaveProperty('token', 'new_access_token');
+    });
+  });
+
+  // --- OTP send disabled: keeping authentication simple ---
+  // describe('POST /api/v2/auth/sendOTP/', () => {
+  //   it('should return 200 and message to use email and password', async () => {
+  //     const response = await request(app)
+  //       .post('/api/v2/auth/sendOTP/')
+  //       .send({ email: 'test@example.com' });
+  //
+  //     expect(response.status).toBe(200);
+  //     expect(response.body).toHaveProperty(
+  //       'message',
+  //       'Use your email and password to log in.',
+  //     );
+  //   });
+  // });
+
+  describe('POST /api/v2/auth/signup/oAuth', () => {
+    it('should return 400 when no google or facebook token provided', async () => {
+      const response = await request(app)
+        .post('/api/v2/auth/signup/oAuth')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message', 'Missing authentication token');
+    });
+
+    it('should return 200 and token when authHandler succeeds', async () => {
+      vi.spyOn(authService, 'authHandler').mockResolvedValueOnce({
+        message: 'User logged in successfully',
+        token: 'oauth_token',
+        user: createTestUser({ id: 'oauth-user-id', email: 'test@example.com' }) as any,
+      });
+
+      const response = await request(app)
+        .post('/api/v2/auth/signup/oAuth')
+        .send({ googleToken: 'valid_google_id_token' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'User logged in successfully');
+      expect(response.body).toHaveProperty('token', 'oauth_token');
+      expect(response.body).toHaveProperty('user');
+    });
+  });
+
+  describe('PUT /api/v2/auth/signup/:userId', () => {
+    it('should return 200 and success message on user registration', async () => {
+      // Use authService spy so controller gets mock response (avoids cloudinary in this path)
+      vi.spyOn(authService, 'registerUser').mockResolvedValueOnce({
+        message: 'User successfully registered',
+      });
+      // Mock cloudinary.uploader.upload for the controller's upload path (controller runs upload before service)
+      const cloudinary = await import('cloudinary');
+      vi.mocked(cloudinary.v2.uploader.upload).mockResolvedValueOnce({
+        secure_url: 'https://test.cloudinary.com/image.jpg',
+      } as any);
+
+      const response = await request(app)
+        .put('/api/v2/auth/signup/test-user-id')
+        .set('Content-Type', 'application/json')
+        .send({
+          firstName: 'John',
+          lastName: 'Doe',
+          address: '123 Main St',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty(
+        'message',
+        'User successfully registered',
+      );
+      expect(authService.registerUser).toHaveBeenCalledWith('test-user-id', expect.objectContaining({
+        firstName: 'John',
+        lastName: 'Doe',
+        address: '123 Main St',
+      }));
     });
   });
 });

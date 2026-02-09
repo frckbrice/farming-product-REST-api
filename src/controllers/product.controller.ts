@@ -1,61 +1,23 @@
 import * as fs from "fs";
-import User from "../models/user";
-import Role from "../models/role";
-import BuyerReview from "../models/buyerreview";
-import Product from "../models/product";
 import { v2 as cloudinary } from "cloudinary";
 import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth-check";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
+import * as productService from "../services/product.service";
 
-interface CloudinaryResponse {
-  secure_url: string;
-}
-
-interface CreateProductRequest {
-  productName: string;
-  description: string;
-  price: number;
-  quantity: number;
-  category: string;
-  imageUrl?: string;
-}
-
-type UpdateProductRequest = Partial<CreateProductRequest>;
-
-// Configure cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Get all products
 export const allProducts = async (
   req: Request,
   res: Response,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
-    const products = await Product.findAndCountAll({
-      include: [
-        {
-          model: User,
-          attributes: [
-            "id",
-            "firstName",
-            "lastName",
-            "country",
-            "verifiedUser",
-          ],
-          include: [{ model: Role }],
-        },
-      ],
-    });
-
-    if (!products) {
-      throw new AppError("No products found", 404);
-    }
-
+    const products = await productService.findAllProducts();
     res.status(200).json({ products });
   } catch (error) {
     if (error instanceof AppError) {
@@ -69,51 +31,15 @@ export const allProducts = async (
   }
 };
 
-// Get a product by ID
 export const getProduct = async (
   req: Request<{ productId: string }>,
   res: Response,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
-    const foundProduct = await Product.findOne({
-      where: { id: req.params.productId },
-      include: [
-        {
-          model: User,
-          attributes: [
-            "id",
-            "firstName",
-            "lastName",
-            "country",
-            "imageUrl",
-            "verifiedUser",
-          ],
-        },
-        {
-          model: BuyerReview,
-          attributes: ["id", "comment", "rating", "createdAt"],
-          required: false,
-          include: [
-            {
-              model: User,
-              attributes: [
-                "id",
-                "firstName",
-                "lastName",
-                "country",
-                "imageUrl",
-                "verifiedUser",
-              ],
-            },
-          ],
-        },
-      ],
-    });
-
-    if (!foundProduct) {
-      throw new AppError("Product not found", 404);
-    }
-
+    const foundProduct = await productService.findProductById(
+      req.params.productId,
+    );
     res.status(200).json({ product: foundProduct });
   } catch (error) {
     if (error instanceof AppError) {
@@ -126,20 +52,15 @@ export const getProduct = async (
   }
 };
 
-// Get all products of a user
 export const userProducts = async (
   req: Request<{ userId: string }>,
   res: Response,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
-    const userProducts = await Product.findAndCountAll({
-      where: { userId: req.params.userId },
-    });
-
-    if (!userProducts) {
-      throw new AppError("No products found for this user", 404);
-    }
-
+    const userProducts = await productService.findProductsByUserId(
+      req.params.userId,
+    );
     res.status(200).json({ products: userProducts });
   } catch (error) {
     if (error instanceof AppError) {
@@ -153,9 +74,8 @@ export const userProducts = async (
   }
 };
 
-// Create a new product
 export const createProduct = async (
-  req: AuthenticatedRequest & { body: CreateProductRequest },
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -164,33 +84,20 @@ export const createProduct = async (
       throw new AppError("Invalid authentication token", 401);
     }
 
-    const { productName, description, price, quantity, category } = req.body;
-
-    // Validate required fields
-    if (!productName || !description || !price || !quantity || !category) {
-      throw new AppError("Missing required fields", 400);
-    }
-
-    const productData = {
-      ...req.body,
-      userId: req.userData.UserId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    if (req.file) {
-      const cloudinaryResponse = (await cloudinary.uploader.upload(
+    const body = { ...req.body };
+    if (req.file?.path) {
+      const cloudinaryResponse = await cloudinary.uploader.upload(
         req.file.path,
         { resource_type: "image" },
-      )) as CloudinaryResponse;
-
-      productData.imageUrl = cloudinaryResponse.secure_url;
-
-      // Remove the file from public directory
+      );
+      body.imageUrl = cloudinaryResponse.secure_url;
       fs.unlinkSync(req.file.path);
     }
 
-    const result = await Product.create(productData);
+    const result = await productService.createProduct(
+      req.userData.UserId,
+      body,
+    );
 
     res.status(201).json({
       message: "Product created successfully",
@@ -205,41 +112,22 @@ export const createProduct = async (
   }
 };
 
-// Update a product
 export const updateProduct = async (
-  req: Request<{ productId: string }, unknown, UpdateProductRequest>,
+  req: Request<{ productId: string }>,
   res: Response,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
-    const product = await Product.findByPk(req.params.productId);
-    if (!product) {
-      throw new AppError("Product not found", 404);
-    }
-
-    if (req.file) {
-      const cloudinaryResponse = (await cloudinary.uploader.upload(
+    const body = { ...req.body };
+    if (req.file?.path) {
+      const cloudinaryResponse = await cloudinary.uploader.upload(
         req.file.path,
-      )) as CloudinaryResponse;
-
-      req.body.imageUrl = cloudinaryResponse.secure_url;
-
-      // Remove the file from public directory
+      );
+      body.imageUrl = cloudinaryResponse.secure_url;
       fs.unlinkSync(req.file.path);
     }
 
-    const productData = {
-      ...req.body,
-      updatedAt: new Date(),
-    };
-
-    const [updatedCount] = await Product.update(productData, {
-      where: { id: req.params.productId },
-    });
-
-    if (updatedCount === 0) {
-      throw new AppError("Failed to update product", 500);
-    }
-
+    await productService.updateProduct(req.params.productId, body);
     res.status(200).json({ message: "Product updated successfully" });
   } catch (error) {
     if (error instanceof AppError) {
@@ -253,26 +141,16 @@ export const updateProduct = async (
   }
 };
 
-// Delete a product
 export const removeProduct = async (
   req: Request<{ productId: string }>,
   res: Response,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
-    const product = await Product.findByPk(req.params.productId);
-    if (!product) {
-      throw new AppError("Product not found", 404);
-    }
-
-    const deletedCount = await Product.destroy({
-      where: { id: req.params.productId },
+    await productService.removeProduct(req.params.productId);
+    res.status(200).json({
+      message: "Product has been deleted successfully",
     });
-
-    if (deletedCount === 0) {
-      throw new AppError("Failed to delete product", 500);
-    }
-
-    res.status(200).json({ message: "Product has been deleted successfully" });
   } catch (error) {
     if (error instanceof AppError) {
       res.status(error.statusCode).json({ message: error.message });

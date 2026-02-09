@@ -66,9 +66,9 @@ class User extends Model<UserAttributes> {
   })
   declare facebookId: string;
   @Column({
-    type: DataType.BIGINT,
+    type: DataType.STRING,
   })
-  declare phoneNum: number;
+  declare phoneNum: string;
   @Column({
     type: DataType.STRING,
   })

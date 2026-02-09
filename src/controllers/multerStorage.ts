@@ -1,7 +1,7 @@
 import multer, { StorageEngine, MulterError, Multer } from "multer";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
 
 // Define custom types for multer request and response
 type MulterRequest = Request & { file?: unknown };

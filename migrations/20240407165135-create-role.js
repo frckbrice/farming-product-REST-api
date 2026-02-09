@@ -1,31 +1,31 @@
 'use strict';
 // /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-   up: async(context) =>{
-    const {queryInterface, Sequelize} = context.context
+  up: async (context) => {
+    const { queryInterface, Sequelize } = context.context;
     await queryInterface.createTable('Roles', {
       id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
-        autoIncrement: true,
+        defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
       },
       roleName: {
         type: Sequelize.ENUM(),
-        values: ['farmer', 'buyer']
+        values: ['farmer', 'buyer'],
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
-      }
+        type: Sequelize.DATE,
+      },
     });
   },
- down: async(context) =>{
-  const {queryInterface, Sequelize} = context.context
+  down: async (context) => {
+    const { queryInterface } = context.context;
     await queryInterface.dropTable('Roles');
-  }
+  },
 };

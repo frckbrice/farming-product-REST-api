@@ -8,14 +8,21 @@ const path_1 = require("path");
 const fs_1 = tslib_1.__importDefault(require("fs"));
 const sequelize_typescript_1 = require("sequelize-typescript");
 const runMigrations_1 = tslib_1.__importDefault(require("../utils/runMigrations"));
-const config_1 = tslib_1.__importDefault(require("../config/config"));
-const environment = ((_a = process.env) === null || _a === void 0 ? void 0 : _a.NODE_ENV) || "production";
-const envConfig = config_1.default[environment];
-if (!envConfig) {
-    throw new Error(`No configuration found for environment: ${environment}`);
+// Use DATABASE_URL from .env (e.g. postgresql://user:pass@host:5432/dbname)
+const rawUrl = ((_a = process.env.DATABASE_URL) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+const connectionString = rawUrl &&
+    rawUrl !== "undefined" &&
+    (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://"))
+    ? rawUrl
+    : null;
+const useConnectionString = connectionString !== null;
+if (!useConnectionString) {
+    throw new Error("Database not configured: set DATABASE_URL. " +
+        "Locally: add it to .env. On Render/Docker: set DATABASE_URL in the service Environment (e.g. postgresql://user:pass@host:5432/dbname).");
 }
-//external connection string
-const connectionString = process.env.DATABASE_URL;
+if (rawUrl && rawUrl !== "undefined" && !useConnectionString) {
+    throw new Error(`DATABASE_URL is set but invalid: must start with postgres:// or postgresql://. Got: ${rawUrl.slice(0, 30)}${rawUrl.length > 30 ? "..." : ""}`);
+}
 // Function to dynamically load models
 const loadModels = () => {
     const modelsDir = __dirname;
@@ -35,24 +42,26 @@ const models = loadModels();
 if (models.length === 0) {
     throw new Error("No models found in the models directory.");
 }
-const sequelize = new sequelize_typescript_1.Sequelize(`${connectionString}`, {
+const sequelizeOptions = {
     dialect: "postgres",
-    dialectOptions: {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false, // Use this we use a service that uses a self-signed certificate
-        },
-    },
+    dialectOptions: process.env.NOD_ENV === "production"
+        ? {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false, // Use this we use a service that uses a self-signed certificate
+            },
+        }
+        : {},
     logging: console.log, // Set to false to disable SQL query logging
     models: models,
-});
+};
+const sequelize = new sequelize_typescript_1.Sequelize(connectionString, sequelizeOptions);
 /**
  * Asynchronous (IIFE) for database synchronization and migration.
  *
- * This function performs the following tasks:
- * 1. In development environment, it alters the database structure.
- * 2. In production environment, it checks for schema, field, data-type changes and runs migrations if necessary.
- * 3. Handles errors differently based on the environment.
+ * 1. In development: alters the database structure (sync with alter).
+ * 2. In production when RUN_MIGRATIONS=true: runs migrations only if there are pending ones (cheap check to avoid DB quota).
+ * 3. Handles errors differently based on the process.env.NOD_ENV.
  *
  * @async
  * @function
@@ -61,92 +70,19 @@ const sequelize = new sequelize_typescript_1.Sequelize(`${connectionString}`, {
  */
 (() => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (environment === "development") {
+        if (process.env.NODE_ENV === "development") {
+            // Run any pending migrations first (e.g. userOTPCodes.expiredAt DATE→BIGINT)
+            // so that sync({ alter: true }) does not hit PostgreSQL's "cannot be cast automatically" errors.
+            yield (0, runMigrations_1.default)(sequelize);
             console.log("Altering the database...");
             yield sequelize.sync({ alter: true });
             console.log("✅ Database altered successfully.");
         }
-        else if (environment === "production" &&
+        else if (process.env.NODE_ENV === "production" &&
             process.env.RUN_MIGRATIONS === "true") {
-            // Use Sequelize's built-in schema comparison instead of raw SQL
-            console.log("Checking for schema changes...");
-            // Create a transaction to ensure consistency
-            const transaction = yield sequelize.transaction();
-            try {
-                // Use Sequelize's queryInterface for safer schema operations
-                const queryInterface = sequelize.getQueryInterface();
-                // Track if we need to run migrations
-                let hasSchemaChanges = false;
-                // Check each model for changes
-                for (const modelName in sequelize.models) {
-                    const model = sequelize.models[modelName];
-                    const tableName = model.tableName;
-                    // Check if table exists
-                    const tableExists = yield queryInterface.tableExists(tableName, { transaction });
-                    if (!tableExists) {
-                        console.log(`Schema change detected: New table ${tableName}`);
-                        hasSchemaChanges = true;
-                        break;
-                    }
-                    // Get current table description
-                    const tableDescription = yield queryInterface.describeTable(tableName, {});
-                    // Get model attributes
-                    const modelAttributes = model.rawAttributes;
-                    // Check for new or modified columns
-                    for (const attributeName in modelAttributes) {
-                        const attribute = modelAttributes[attributeName];
-                        // Skip virtual fields
-                        if (attribute.type.constructor.key === "VIRTUAL")
-                            continue;
-                        // Get the column info from database
-                        const columnInfo = tableDescription[attributeName];
-                        // If column doesn't exist, it's a new column
-                        if (!columnInfo) {
-                            console.log(`Schema change detected: New column ${tableName}.${attributeName}`);
-                            hasSchemaChanges = true;
-                            break;
-                        }
-                        const sequelizeType = attribute.type.constructor.key;
-                        const dbType = columnInfo.type;
-                        // Check type compatibility
-                        if (!isTypeCompatible(sequelizeType, dbType)) {
-                            console.log(`Schema change detected: Type change for ${tableName}.${attributeName}`);
-                            hasSchemaChanges = true;
-                            break;
-                        }
-                    }
-                    if (hasSchemaChanges)
-                        break;
-                    // Check for removed columns
-                    for (const columnName in tableDescription) {
-                        if (!(columnName in modelAttributes) &&
-                            !["id", "createdAt", "updatedAt"].includes(columnName)) {
-                            // Skip standard Sequelize fields
-                            console.log(`Schema change detected: Removed column ${tableName}.${columnName}`);
-                            hasSchemaChanges = true;
-                            break;
-                        }
-                    }
-                    if (hasSchemaChanges)
-                        break;
-                }
-                // Only run migrations if schema changes are detected
-                if (hasSchemaChanges) {
-                    yield transaction.commit();
-                    console.log("Running migrations due to schema changes...");
-                    yield (0, runMigrations_1.default)(sequelize);
-                    console.log("✅ Migrations completed successfully.");
-                }
-                else {
-                    yield transaction.commit();
-                    console.log("No schema changes detected. Skipping migrations.");
-                }
-            }
-            catch (err) {
-                // Rollback transaction on error
-                yield transaction.rollback();
-                throw err;
-            }
+            // Only run migrations when there are pending ones (cheap check via SequelizeMeta).
+            // Avoids heavy schema-diff and extra DB calls to respect Neon quota.
+            yield (0, runMigrations_1.default)(sequelize);
         }
         else {
             console.log("✅ Database is up to date.");
@@ -155,7 +91,7 @@ const sequelize = new sequelize_typescript_1.Sequelize(`${connectionString}`, {
     catch (error) {
         console.error("Error during database synchronization:", error);
         // More graceful error handling for production
-        if (environment === "production") {
+        if (process.env.NODE_ENV === "production") {
             console.error("Database sync failed, but application will continue running with existing schema");
             // Consider sending an alert to your monitoring system here
         }
@@ -164,30 +100,4 @@ const sequelize = new sequelize_typescript_1.Sequelize(`${connectionString}`, {
         }
     }
 }))();
-// Helper function to check type compatibility
-function isTypeCompatible(sequelizeType, dbType) {
-    // This is a simplified version - expand based on your database and types
-    const typeMap = {
-        STRING: ["character varying", "varchar", "text"],
-        INTEGER: ["integer", "int", "int4"],
-        BIGINT: ["bigint", "int8"],
-        FLOAT: ["real", "float4"],
-        DOUBLE: ["double precision", "float8"],
-        DECIMAL: ["numeric", "decimal"],
-        BOOLEAN: ["boolean", "bool"],
-        DATE: ["timestamp", "timestamptz", "date"],
-        DATEONLY: ["date"],
-        UUID: ["uuid"],
-        JSON: ["json", "jsonb"],
-        JSONB: ["jsonb"],
-        ARRAY: ["array"],
-    };
-    // Convert types to lowercase for comparison
-    const normalizedSequelizeType = sequelizeType.toUpperCase();
-    const normalizedDbType = dbType.toLowerCase();
-    // Check if the database type is compatible with the Sequelize type
-    return typeMap[normalizedSequelizeType]
-        ? typeMap[normalizedSequelizeType].includes(normalizedDbType)
-        : false;
-}
 exports.default = sequelize;

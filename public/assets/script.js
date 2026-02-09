@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const statusElement = document.querySelector('.status');
         if (statusElement) {
             // Simulate a status check
-            fetch('/api/v1/health', { method: 'GET' })
+            fetch('/api/v2/health', { method: 'GET' })
                 .then(response => {
                     if (response.ok) {
                         statusElement.innerHTML = '🟢 API Status: Online';

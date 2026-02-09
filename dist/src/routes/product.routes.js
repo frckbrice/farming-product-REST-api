@@ -104,7 +104,7 @@ productRouter.use(auth_check_1.default);
  */
 /**
  * @swagger
- * /user/product:
+ * /products:
  *  get:
  *      summary: Search product using query parameters
  *      tags: [Products]
@@ -153,7 +153,7 @@ productRouter.use(auth_check_1.default);
 productRouter.get("/", product_search_controller_1.getAllProductSearch);
 /**
  * @swagger
- * /user/product/{productId}:
+ * /products/{productId}:
  *  get:
  *      summary: getting a product based on its ID
  *      tags: [Products]
@@ -201,7 +201,7 @@ productRouter.get("/:productId", product_controller_1.getProduct);
 productRouter.get("/:userId/products", product_controller_1.userProducts);
 /**
  * @swagger
- * /user/product/add:
+ * /products/add:
  *   post:
  *     summary: Add a new product (with image upload)
  *     tags: [Products]
@@ -307,7 +307,7 @@ productRouter.post("/add", (0, multerStorage_1.default)("productImage"), validat
 productRouter.put("/:productId", (0, multerStorage_1.default)("productImage"), validateProduct, product_controller_1.updateProduct);
 /**
  * @swagger
- * /user/product/remove/{productId}:
+ * /products/{productId}:
  *  delete:
  *      summary: Caution! removing a product by the user
  *      tags: [Products]

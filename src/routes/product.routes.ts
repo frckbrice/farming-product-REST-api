@@ -119,7 +119,7 @@ productRouter.use(authCheck);
 
 /**
  * @swagger
- * /user/product:
+ * /products:
  *  get:
  *      summary: Search product using query parameters
  *      tags: [Products]
@@ -170,7 +170,7 @@ productRouter.get("/", getAllProductSearch);
 
 /**
  * @swagger
- * /user/product/{productId}:
+ * /products/{productId}:
  *  get:
  *      summary: getting a product based on its ID
  *      tags: [Products]
@@ -220,7 +220,7 @@ productRouter.get("/:userId/products", userProducts);
 
 /**
  * @swagger
- * /user/product/add:
+ * /products/add:
  *   post:
  *     summary: Add a new product (with image upload)
  *     tags: [Products]
@@ -339,7 +339,7 @@ productRouter.put(
 
 /**
  * @swagger
- * /user/product/remove/{productId}:
+ * /products/{productId}:
  *  delete:
  *      summary: Caution! removing a product by the user
  *      tags: [Products]

@@ -1,5 +1,5 @@
 import fetch, { Response } from "node-fetch";
-import AppError from "../errors/customErrors";
+import { AppError } from "../errors";
 
 interface MessageToSend {
   title: string;

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found | Farming Products API</title>
+    <title>404 - Page Not Found | Farm Marketplace API</title>
     <link rel="stylesheet" href="/public/assets/styles.css">
     <style>
         * {
@@ -15,7 +15,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(145deg, #1a3c1a 0%, #2d5a27 50%, #3d7a33 100%);
             min-height: 100vh;
             color: #333;
             line-height: 1.6;
@@ -42,7 +42,7 @@
         .error-code {
             font-size: 8rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2d5a27 0%, #5a8f3e 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -143,7 +143,7 @@
 
         .search-btn {
             padding: 15px 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2d5a27 0%, #3d7a33 100%);
             color: white;
             border: none;
             cursor: pointer;
@@ -152,7 +152,7 @@
         }
 
         .search-btn:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            background: linear-gradient(135deg, #3d7a33 0%, #5a8f3e 100%);
         }
 
         .helpful-links {
@@ -164,7 +164,7 @@
         }
 
         .helpful-link {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #5a8f3e 0%, #6ba347 100%);
             color: white;
             padding: 25px;
             border-radius: 15px;
@@ -350,15 +350,15 @@
             </div>
 
             <div class="helpful-links">
-                <a href="/api/v1/health" class="helpful-link">
+                <a href="/api-docs#/Health/getHealth" class="helpful-link">
                     <h4>🔗 Health Check</h4>
-                    <p>Check if our API is running properly</p>
+                    <p>See health check endpoint in API specs</p>
                 </a>
-                <a href="/api/v1/products" class="helpful-link">
+                <a href="/api/v2/products" class="helpful-link">
                     <h4>🌾 Products</h4>
                     <p>Browse available farming products</p>
                 </a>
-                <a href="/api/v1/auth" class="helpful-link">
+                <a href="/api/v2/auth" class="helpful-link">
                     <h4>🔐 Authentication</h4>
                     <p>Learn about our authentication system</p>
                 </a>

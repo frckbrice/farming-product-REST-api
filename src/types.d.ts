@@ -9,7 +9,7 @@ export interface UserAttributes {
   imageUrl: string;
   googleId: string;
   facebookId: string;
-  phoneNum: number;
+  phoneNum: string;
   roleId: string;
   password: string | null;
   expoPushToken: string | null;
@@ -66,6 +66,7 @@ export interface OrderAttributes {
   updatedAt: Date;
 }
 
+/** OTP auth disabled — keeping authentication simple; type kept for UserOTPCode model/DB. */
 export interface UserOTPAttributes {
   id?: number;
   userId: string;
