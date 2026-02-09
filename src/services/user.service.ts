@@ -26,7 +26,7 @@ export async function getAllUsers(): Promise<Record<string, unknown>[]> {
     throw new AppError("No users found", 400);
   }
   return users.map((user) => {
-    const { password, ...userData } = user.toJSON();
+    const { password: _password, ...userData } = user.toJSON();
     return userData as Record<string, unknown>;
   });
 }
@@ -38,7 +38,7 @@ export async function getUserById(
   if (!user) {
     throw new AppError("No such user found", 401);
   }
-  const { password, ...userData } = user.toJSON();
+  const { password: _password, ...userData } = user.toJSON();
   return userData as Record<string, unknown>;
 }
 

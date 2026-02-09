@@ -3,9 +3,14 @@ import { AppError } from "../errors";
 import * as productSearchService from "../services/product.search.service";
 
 export const getAllProductSearch = async (
-  req: Request<unknown, unknown, unknown, productSearchService.ProductSearchQuery>,
+  req: Request<
+    unknown,
+    unknown,
+    unknown,
+    productSearchService.ProductSearchQuery
+  >,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const query = req.query as productSearchService.ProductSearchQuery;

@@ -72,10 +72,7 @@ export async function getOrderById(orderId: string) {
   return orderData;
 }
 
-export async function getBuyerOrders(
-  buyerId: string,
-  orderStatus?: string,
-) {
+export async function getBuyerOrders(buyerId: string, orderStatus?: string) {
   const whereClause: { buyerId: string; status?: string } = { buyerId };
   if (orderStatus?.trim()) {
     whereClause.status = orderStatus;
@@ -230,8 +227,7 @@ async function sendOrderCompleteNotifications(
   if (sellerData?.expoPushToken) {
     const notificationMessage = {
       title: "Order Completed",
-      message:
-        "Congratulations! Your Order has been marked as completed",
+      message: "Congratulations! Your Order has been marked as completed",
     };
     const result = await sendPushNotificationToUser(sellerData.expoPushToken, {
       title: notificationMessage.title,

@@ -19,7 +19,8 @@ if (
   CLOUDINARY_CLOUD_NAME &&
   CLOUDINARY_API_KEY &&
   CLOUDINARY_API_SECRET &&
-  (!CLOUDINARY_URL || !String(CLOUDINARY_URL).toLowerCase().startsWith("cloudinary://"))
+  (!CLOUDINARY_URL ||
+    !String(CLOUDINARY_URL).toLowerCase().startsWith("cloudinary://"))
 ) {
   process.env.CLOUDINARY_URL = `cloudinary://${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}@${CLOUDINARY_CLOUD_NAME}`;
 }

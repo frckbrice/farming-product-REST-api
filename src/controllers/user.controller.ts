@@ -13,7 +13,7 @@ cloudinary.config({
 export const getAllUserData = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const users = await userService.getAllUsers();
@@ -33,7 +33,7 @@ export const getAllUserData = async (
 export const getUserData = async (
   req: Request<{ userId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const userData = await userService.getUserById(req.params.userId);
@@ -73,7 +73,7 @@ export const updateUser = async (
 export const deleteUser = async (
   req: Request<{ userId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const result = await userService.deleteUser(req.params.userId);
@@ -90,13 +90,21 @@ export const deleteUser = async (
 };
 
 export const updatePassword = async (
-  req: Request<unknown, unknown, { password: string; userId: string; oldPassword?: string }>,
+  req: Request<
+    unknown,
+    unknown,
+    { password: string; userId: string; oldPassword?: string }
+  >,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const { password, userId, oldPassword } = req.body;
-    const result = await userService.updatePassword(userId, password, oldPassword);
+    const result = await userService.updatePassword(
+      userId,
+      password,
+      oldPassword,
+    );
     res.status(200).json(result);
   } catch (error) {
     if (error instanceof AppError) {

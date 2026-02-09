@@ -42,9 +42,7 @@ export async function findAllProducts(): Promise<{
   return products;
 }
 
-export async function findProductById(
-  productId: string,
-): Promise<Product> {
+export async function findProductById(productId: string): Promise<Product> {
   const foundProduct = await Product.findOne({
     where: { id: productId },
     include: [

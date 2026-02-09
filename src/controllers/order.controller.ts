@@ -14,7 +14,7 @@ cloudinary.config({
 export const getOrderById = async (
   req: Request<{ orderId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const orderData = await orderService.getOrderById(req.params.orderId);
@@ -33,7 +33,7 @@ export const getOrderById = async (
 export const getBuyerOrders = async (
   req: Request<{ buyerId: string }, unknown, unknown, { orderStatus?: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const buyerOrders = await orderService.getBuyerOrders(
@@ -56,7 +56,7 @@ export const getSellerOrders = async (
     { orderStatus?: string; productName?: string }
   >,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const sellerOrders = await orderService.getSellerOrders(
@@ -73,13 +73,9 @@ export const getSellerOrders = async (
 };
 
 export const createOrder = async (
-  req: Request<
-    { productId: string },
-    unknown,
-    orderService.CreateOrderInput
-  >,
+  req: Request<{ productId: string }, unknown, orderService.CreateOrderInput>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const buyerId =
@@ -103,13 +99,9 @@ export const createOrder = async (
 };
 
 export const updateOrder = async (
-  req: Request<
-    { orderId: string },
-    unknown,
-    orderService.UpdateOrderInput
-  >,
+  req: Request<{ orderId: string }, unknown, orderService.UpdateOrderInput>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const result = await orderService.updateOrder(
@@ -131,7 +123,7 @@ export const updateOrder = async (
 export const getTransaction = async (
   req: Request<{ orderId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const transaction = await orderService.getTransactionByOrderId(
@@ -153,11 +145,7 @@ export const getTransaction = async (
 };
 
 export const updateDispatchDetails = async (
-  req: Request<
-    { orderId: string },
-    unknown,
-    orderService.DispatchDetailsInput
-  >,
+  req: Request<{ orderId: string }, unknown, orderService.DispatchDetailsInput>,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {

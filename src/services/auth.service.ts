@@ -307,10 +307,7 @@ export async function authHandler(data: AuthHandlerInput): Promise<{
         user.googleId = googleId;
         await user.save();
       } else if (user.googleId !== googleId) {
-        throw new AppError(
-          "Please use your exact email ID to sign in",
-          400,
-        );
+        throw new AppError("Please use your exact email ID to sign in", 400);
       }
     } else {
       user = await User.create({
@@ -344,10 +341,7 @@ export async function authHandler(data: AuthHandlerInput): Promise<{
     const { id: facebookId, name, email } = response.data;
 
     if (!email) {
-      throw new AppError(
-        "Facebook account must have an email",
-        400,
-      );
+      throw new AppError("Facebook account must have an email", 400);
     }
 
     const [firstName] = name.split(" ");
@@ -360,10 +354,7 @@ export async function authHandler(data: AuthHandlerInput): Promise<{
         user.facebookId = facebookId;
         await user.save();
       } else if (user.facebookId !== facebookId) {
-        throw new AppError(
-          "Please use your exact email ID to sign in",
-          400,
-        );
+        throw new AppError("Please use your exact email ID to sign in", 400);
       }
     } else {
       user = await User.create({
@@ -387,10 +378,7 @@ export async function authHandler(data: AuthHandlerInput): Promise<{
   }
 
   if (!user) {
-    throw new AppError(
-      "User creation failed. Please try again.",
-      500,
-    );
+    throw new AppError("User creation failed. Please try again.", 500);
   }
 
   const token = jwt.sign(

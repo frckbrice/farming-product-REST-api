@@ -15,7 +15,7 @@ const errorHandler = (
   err: Error | AppError,
   _req: Request,
   res: Response,
-  _next: NextFunction, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _next: NextFunction,
 ): void => {
   console.log("Error handler called:", err);
 

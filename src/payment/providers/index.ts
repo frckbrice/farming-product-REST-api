@@ -14,8 +14,12 @@ const providers: Record<PaymentProviderId, IPaymentProvider | null> = {
  * Use PAYMENT_PROVIDER env (e.g. "adwa") for default; later can be per-tenant.
  * API consumers can pass ?provider=adwa or use external flow for their own provider.
  */
-export function getPaymentProvider(providerId?: PaymentProviderId | string | null): IPaymentProvider {
-  const id = (providerId ?? process.env.PAYMENT_PROVIDER ?? "adwa") as PaymentProviderId;
+export function getPaymentProvider(
+  providerId?: PaymentProviderId | string | null,
+): IPaymentProvider {
+  const id = (providerId ??
+    process.env.PAYMENT_PROVIDER ??
+    "adwa") as PaymentProviderId;
   const provider = providers[id];
   if (provider) {
     return provider;

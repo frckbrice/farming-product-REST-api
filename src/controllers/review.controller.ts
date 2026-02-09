@@ -6,7 +6,7 @@ import * as reviewService from "../services/review.service";
 export const orderReview = async (
   req: Request<{ orderId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const orderReviewData = await reviewService.getReviewByOrderId(
@@ -33,7 +33,7 @@ export const orderReview = async (
 export const getReviewByProdId = async (
   req: Request<{ productId: string }, unknown, unknown, { rating?: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const reviews = await reviewService.getReviewsByProductId(
@@ -68,7 +68,7 @@ export const createReview = async (
     params: { productId: string; orderId: string };
   },
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     if (!req.userData || typeof req.userData === "string") {
@@ -95,7 +95,7 @@ export const createReview = async (
 export const updateReview = async (
   req: Request<{ reviewId: string }, unknown, reviewService.UpdateReviewInput>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const result = await reviewService.updateReview(
@@ -117,16 +117,13 @@ export const updateReview = async (
 export const deleteOwnReview = async (
   req: AuthenticatedRequest & { params: { reviewId: string } },
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     if (!req.userData || typeof req.userData === "string") {
       throw new AppError("Invalid authentication token", 401);
     }
-    await reviewService.deleteReview(
-      req.params.reviewId,
-      req.userData.UserId,
-    );
+    await reviewService.deleteReview(req.params.reviewId, req.userData.UserId);
     res.status(204).end();
   } catch (error) {
     if (error instanceof AppError) {

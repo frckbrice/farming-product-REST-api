@@ -115,15 +115,11 @@ export const refreshToken = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const result = await authService.refreshToken(
-      req.headers.authorization,
-    );
+    const result = await authService.refreshToken(req.headers.authorization);
     res.status(200).json(result);
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      res
-        .status(401)
-        .json({ message: "Invalid token, please login again" });
+      res.status(401).json({ message: "Invalid token, please login again" });
       return;
     }
     if (error instanceof AppError) {

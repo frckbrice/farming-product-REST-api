@@ -49,10 +49,7 @@ export async function getReviewsByProductId(
   if (rating?.trim()) {
     const ratingNum = Number(rating);
     if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
-      throw new AppError(
-        "Invalid rating value. Must be between 1 and 5",
-        400,
-      );
+      throw new AppError("Invalid rating value. Must be between 1 and 5", 400);
     }
     whereClause.rating = { [Op.eq]: ratingNum };
   }
@@ -62,13 +59,7 @@ export async function getReviewsByProductId(
     include: [
       {
         model: User,
-        attributes: [
-          "id",
-          "firstName",
-          "lastName",
-          "country",
-          "verifiedUser",
-        ],
+        attributes: ["id", "firstName", "lastName", "country", "verifiedUser"],
       },
       {
         model: Product,
@@ -130,10 +121,10 @@ export async function createReview(
       title: "Order Reviewed",
       message: "You got a review on your order from the buyer",
     };
-    const result = await sendPushNotificationToUser(
-      sellerData.expoPushToken,
-      { title: notificationMessage.title, text: notificationMessage.message },
-    );
+    const result = await sendPushNotificationToUser(sellerData.expoPushToken, {
+      title: notificationMessage.title,
+      text: notificationMessage.message,
+    });
     if (result && "status" in result) {
       await handleExpoResponse(
         result as ExpoResponse,

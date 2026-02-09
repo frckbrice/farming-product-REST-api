@@ -14,7 +14,7 @@ cloudinary.config({
 export const allProducts = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const products = await productService.findAllProducts();
@@ -34,7 +34,7 @@ export const allProducts = async (
 export const getProduct = async (
   req: Request<{ productId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const foundProduct = await productService.findProductById(
@@ -55,7 +55,7 @@ export const getProduct = async (
 export const userProducts = async (
   req: Request<{ userId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const userProducts = await productService.findProductsByUserId(
@@ -115,7 +115,7 @@ export const createProduct = async (
 export const updateProduct = async (
   req: Request<{ productId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     const body = { ...req.body };
@@ -144,7 +144,7 @@ export const updateProduct = async (
 export const removeProduct = async (
   req: Request<{ productId: string }>,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): Promise<void> => {
   try {
     await productService.removeProduct(req.params.productId);

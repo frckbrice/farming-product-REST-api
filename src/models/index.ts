@@ -9,8 +9,8 @@ import runMigrations from "../utils/runMigrations";
 const rawUrl = process.env.DATABASE_URL?.trim() || "";
 const connectionString =
   rawUrl &&
-    rawUrl !== "undefined" &&
-    (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://"))
+  rawUrl !== "undefined" &&
+  (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://"))
     ? rawUrl
     : null;
 const useConnectionString = connectionString !== null;
@@ -18,12 +18,12 @@ const useConnectionString = connectionString !== null;
 if (!useConnectionString) {
   throw new Error(
     "Database not configured: set DATABASE_URL. " +
-      "Locally: add it to .env. On Render/Docker: set DATABASE_URL in the service Environment (e.g. postgresql://user:pass@host:5432/dbname)."
+      "Locally: add it to .env. On Render/Docker: set DATABASE_URL in the service Environment (e.g. postgresql://user:pass@host:5432/dbname).",
   );
 }
 if (rawUrl && rawUrl !== "undefined" && !useConnectionString) {
   throw new Error(
-    `DATABASE_URL is set but invalid: must start with postgres:// or postgresql://. Got: ${rawUrl.slice(0, 30)}${rawUrl.length > 30 ? "..." : ""}`
+    `DATABASE_URL is set but invalid: must start with postgres:// or postgresql://. Got: ${rawUrl.slice(0, 30)}${rawUrl.length > 30 ? "..." : ""}`,
   );
 }
 
@@ -55,11 +55,11 @@ const sequelizeOptions = {
   dialectOptions:
     process.env.NOD_ENV === "production"
       ? {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false, // Use this we use a service that uses a self-signed certificate
-        },
-      }
+          ssl: {
+            require: true,
+            rejectUnauthorized: false, // Use this we use a service that uses a self-signed certificate
+          },
+        }
       : {},
   logging: console.log, // Set to false to disable SQL query logging
   models: models,

@@ -20,7 +20,7 @@ function createUmzug(sequelize: SequelizeConstructor) {
  * Use this to avoid running migrations unnecessarily and hitting DB quota.
  */
 export const hasPendingMigrations = async (
-  sequelize: SequelizeConstructor
+  sequelize: SequelizeConstructor,
 ): Promise<boolean> => {
   const umzug = createUmzug(sequelize);
   const pending = await umzug.pending();
@@ -34,7 +34,7 @@ export const hasPendingMigrations = async (
  * @returns Promise<void>
  */
 const runMigrations = async (
-  sequelize: SequelizeConstructor
+  sequelize: SequelizeConstructor,
 ): Promise<void> => {
   const umzug = createUmzug(sequelize);
 

@@ -30,7 +30,12 @@ export class AdwaPaymentProvider implements IPaymentProvider {
   readonly id = "adwa";
 
   private async getAuthToken(): Promise<string> {
-    if (!MERCHANT_KEY || !APPLICATION_KEY || !SUBSCRIPTION_KEY || !BaseURL_Adwa) {
+    if (
+      !MERCHANT_KEY ||
+      !APPLICATION_KEY ||
+      !SUBSCRIPTION_KEY ||
+      !BaseURL_Adwa
+    ) {
       throw new Error("Missing required Adwa payment configuration");
     }
     try {
@@ -47,7 +52,10 @@ export class AdwaPaymentProvider implements IPaymentProvider {
       const response = await axios(config);
       const body = response.data as AdwaTokenResponse;
       if (!body?.data?.tokenCode) {
-        throw new AppError("Failed to get auth token: no token in response", 500);
+        throw new AppError(
+          "Failed to get auth token: no token in response",
+          500,
+        );
       }
       return body.data.tokenCode;
     } catch (error) {
@@ -57,7 +65,9 @@ export class AdwaPaymentProvider implements IPaymentProvider {
           error.response.status,
         );
       }
-      throw error instanceof AppError ? error : new AppError("Failed to get auth token", 500);
+      throw error instanceof AppError
+        ? error
+        : new AppError("Failed to get auth token", 500);
     }
   }
 
@@ -106,7 +116,9 @@ export class AdwaPaymentProvider implements IPaymentProvider {
           error.response.status,
         );
       }
-      throw error instanceof AppError ? error : new AppError("Payment request failed", 500);
+      throw error instanceof AppError
+        ? error
+        : new AppError("Payment request failed", 500);
     }
   }
 
@@ -143,7 +155,9 @@ export class AdwaPaymentProvider implements IPaymentProvider {
           error.response.status,
         );
       }
-      throw error instanceof AppError ? error : new AppError("Failed to check payment status", 500);
+      throw error instanceof AppError
+        ? error
+        : new AppError("Failed to check payment status", 500);
     }
   }
 
